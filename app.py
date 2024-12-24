@@ -1,6 +1,8 @@
 import streamlit as st
 import json
 import base64
+import os
+from pathlib import Path
 
 # Configure page settings
 st.set_page_config(layout="wide")
@@ -8,6 +10,7 @@ st.set_page_config(layout="wide")
 # Custom CSS with fixes
 st.markdown("""
 <style>
+    /* Global Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Amiri&family=Scheherazade+New:wght@700&display=swap');
 
@@ -18,7 +21,7 @@ st.markdown("""
         font-family: 'Noto Kufi Arabic', sans-serif;
     }
     
-    /* Fixed header layout */
+    /* ===== HEADER SECTION ===== */
     .header-container {
         display: flex;
         align-items: center;
@@ -28,47 +31,34 @@ st.markdown("""
         width: 100%;
     }
     
-    /* Logo styling */
+    /* ----- Logo Styling ----- */
     .logo-container {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 30px;  /* Increased space between logos */
+        gap: 30px;
     }
     
     .logo-container.left-logos,
     .logo-container.right-logos {
-        flex: 0 0 450px;  /* Increased width to accommodate larger logos */
+        flex: 0 0 450px;
         display: flex;
         align-items: center;
-        justify-content: space-between;  /* Distribute space between logos */
+        justify-content: space-between;
     }
     
-    /* Reset base image styles */
     .logo-container img {
         height: auto;
         width: auto;
         object-fit: contain;
     }
     
-    /* Specific logo sizes */
-    .logo-container.left-logos img:nth-child(1) {
-        width: 260px; /* Najiz logo */
-    }
-    
-    .logo-container.left-logos img:nth-child(2) {
-        width: 230px; /* SDAIA logo */
-    }
-    
-    .logo-container.right-logos img:nth-child(1) {
-        width: 200px; /* Justice logo */
-    }
-    
-    .logo-container.right-logos img:nth-child(2) {
-        width: 250px; /* Gov logo */
-    }
-    
-    /* Ensure the title stays centered */
+    .logo-container.left-logos img:nth-child(1) { width: 260px; } /* Najiz logo */
+    .logo-container.left-logos img:nth-child(2) { width: 230px; } /* SDAIA logo */
+    .logo-container.right-logos img:nth-child(1) { width: 200px; } /* Justice logo */
+    .logo-container.right-logos img:nth-child(2) { width: 250px; } /* Gov logo */
+
+    /* ----- Title Styling ----- */
     .app-title {
         flex: 1;
         text-align: center;
@@ -130,35 +120,59 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         transition: all 0.3s ease;
     }
-    
-    .app-title:hover h1 {
-        background-position: right center;
+
+    /* Title Animation */
+    .app-title h1::after {
+        content: "نـاظـر";
+        position: absolute;
+        top: 2px;
+        left: 0;
+        right: 0;
+        z-index: -1;
+        background: linear-gradient(120deg, #1e40af, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        opacity: 0.4;
     }
     
-    .app-title p {
-        font-family: 'Noto Kufi Arabic', sans-serif;
-        font-size: 1em;
-        color: #4a5568;
-        margin: 5px 0 0;
-        position: relative;
-        z-index: 1;
-        transition: all 0.3s ease;
+    @keyframes shine {
+        0% { background-position: -200% center; }
+        100% { background-position: 200% center; }
     }
-    
-    .app-title:hover p {
-        color: #2d3748;
+
+    /* ===== MAIN CONTENT SECTION ===== */
+    .main-container {
+        padding: 5px 10px;
+        max-width: 1200px;
+        margin: 0 auto;
     }
-    
-    /* Content section */
+
+    /* ----- Input/Results Area ----- */
     .content-section {
         margin-top: 1rem;
     }
     
-    /* Align text area and results */
     .stTextArea {
         margin-top: -1rem;
     }
     
+    .stTextArea textarea {
+        direction: rtl;
+        text-align: right;
+        margin-bottom: 0;
+        font-family: 'Amiri', serif !important;
+        font-size: 1.2em !important;
+        line-height: 1.6 !important;
+        padding: 1rem !important;
+    }
+
+    .stTextArea textarea::placeholder {
+        font-family: 'Amiri', serif !important;
+        font-size: 1.2em !important;
+        color: #6b7280 !important;
+    }
+
+    /* ----- Classification Results ----- */
     .results-section {
         margin-top: 0.5rem;
         background-color: #f8fafc;
@@ -166,8 +180,67 @@ st.markdown("""
         padding: 1.5rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
+
+    /* Classification Items */
+    .classification-item {
+        padding: 1rem;
+        border-radius: 12px;
+        margin: 0.75rem 0;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid red;
+    }
     
-    /* Centered title styling */
+    .main-classification {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 1px solid #fbbf24;
+    }
+    
+    .sub-classification {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #60a5fa;
+    }
+    
+    .case-type {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 1px solid #34d399;
+    }
+
+    /* ===== BUTTONS ===== */
+    .stButton > button {
+        background: linear-gradient(135deg, #ef4444 0%, #3b82f6 100%);
+        color: white;
+        font-family: 'Noto Kufi Arabic', sans-serif;
+        font-weight: 600;
+        padding: 0.5rem 2rem;
+        border-radius: 8px;
+        border: none;
+        transition: all 0.3s ease;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        background: linear-gradient(135deg, #dc2626 0%, #2563eb 100%);
+    }
+
+    /* ===== HISTORY SECTION ===== */
+    .entry-container {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    /* Rest of existing styles... */
+    /* Ensure the title stays centered */
     .app-title {
         flex: 1;
         text-align: center;
@@ -420,19 +493,32 @@ st.markdown("""
 
 def load_history():
     try:
-        with open('history.json', 'r', encoding='utf-8') as f:
+        history_file = Path("history.json")
+        if not history_file.exists():
+            return []
+        with open(history_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
 def save_history(history):
-    with open('history.json', 'w', encoding='utf-8') as f:
-        json.dump(history, f, ensure_ascii=False, indent=4)
+    try:
+        with open('history.json', 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.error(f"Failed to save history: {e}")
 
-def get_base64_logo(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-        return base64.b64encode(data).decode()
+def get_base64_logo(filename):
+    try:
+        current_dir = Path(__file__).parent
+        file_path = current_dir / "assets" / filename
+        
+        with open(file_path, "rb") as f:
+            data = f.read()
+            return base64.b64encode(data).decode()
+    except Exception as e:
+        st.warning(f"Could not load logo: {filename}")
+        return ""
 
 def main():
     # Initialize session state
@@ -443,11 +529,11 @@ def main():
     if "clear_input" not in st.session_state:
         st.session_state.clear_input = False
 
-    # Load all logos
-    najiz_logo = get_base64_logo(r"assets\logo_najiz.svg")
-    justice_logo = get_base64_logo(r"assets\justice.svg")
-    sdaia_logo = get_base64_logo(r"assets\SDAIA.svg")
-    gov_logo = get_base64_logo(r"assets\DigitaGov.png.svg")
+    # Load all logos with simple filenames
+    najiz_logo = get_base64_logo("logo_najiz.svg")
+    justice_logo = get_base64_logo("justice.svg")
+    sdaia_logo = get_base64_logo("SDAIA.svg")
+    gov_logo = get_base64_logo("DigitaGov.png.svg")
 
     # Updated header structure with all logos
     st.markdown(f'''
