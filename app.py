@@ -609,7 +609,7 @@ def main():
                                 margin-bottom: 15px;
                                 font-family: 'Amiri', serif;
                                 color: #444;
-                                font-size: 18px;
+                                font-size: 20px;
                                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                                 transition: transform 0.2s ease, box-shadow 0.2s ease;
                             }}
