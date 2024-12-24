@@ -2,14 +2,13 @@ import streamlit as st
 import json
 import base64
 from pathlib import Path
-
+import time
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
 #------------------------------------------------------------------------------
 # Configure Streamlit page settings
 st.set_page_config(
     layout="wide",
-    # initial_sidebar_state="collapsed",
     page_title="ناظر",
     page_icon="⚖️",
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
@@ -236,7 +235,7 @@ st.markdown("""
     }
     
     .app-title h1:hover {
-        animation: circleScatter 0.8s ease-in-out;
+        animation: circleScatter 0.7s ease-in-out;
     }
     
     @keyframes circleScatter {
@@ -466,6 +465,25 @@ st.markdown("""
         background-color: transparent;
         color: #dc2626;
     }
+
+    /* Loading animation */
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+
+    .loading {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .stProgress .st-bo {
+        background-color: #1e40af;
+    }
+
+    .stProgress .st-bp {
+        background-color: #bfdbfe;
+    }
 </style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -528,6 +546,12 @@ def get_base64_logo(filename):
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
 def main():
+    # Add new session state for delete operations
+    if "delete_clicked" not in st.session_state:
+        st.session_state.delete_clicked = False
+    if "delete_index" not in st.session_state:
+        st.session_state.delete_index = None
+        
     # Initialize session state
     if "history" not in st.session_state:
         st.session_state.history = load_history()
@@ -535,6 +559,12 @@ def main():
         st.session_state.case_submitted = False
     if "clear_input" not in st.session_state:
         st.session_state.clear_input = False
+    if "loading" not in st.session_state:
+        st.session_state.loading = False
+    if "current_results" not in st.session_state:
+        st.session_state.current_results = None
+    if "progress" not in st.session_state:
+        st.session_state.progress = None
 
     # Load logos
     logos = {
@@ -574,7 +604,7 @@ def main():
             label=" ",
             height=300,
             key="rtl_input",
-            placeholder="الرجاء إدخال نص البحث هنا للتصنيف...",
+            placeholder="الرجاء إدخال نص الدعوى هنا للتصنيف...",
             disabled=st.session_state.case_submitted,
             value=" " if st.session_state.clear_input else None
         )
@@ -584,37 +614,62 @@ def main():
 
         col1, col2 = st.columns(2)
         with col1:
-            submit_clicked = st.button("⚖️ تصنيف البحث", type="primary", disabled=st.session_state.case_submitted)
-            if submit_clicked and user_input and not st.session_state.case_submitted:
-                st.session_state.case_submitted = True
-                m_calss_example = "أحوال شخصية"
-                s_calss_example = "دعاوى الولاية"
-                case_type_example = "حجر أو رفعه"
-
-                new_entry = {
-                    "input": user_input,
-                    "main_classification": m_calss_example,  # Store raw value
-                    "sub_classification": s_calss_example,   # Store raw value
-                    "case_type": case_type_example,         # Store raw value
-                    "id": len(st.session_state.history)
-                }
-                st.session_state.history.append(new_entry)
-                save_history(st.session_state.history)
-                st.rerun()
+            if st.button("⚖️ تصنيف الدعوى", type="primary", disabled=st.session_state.case_submitted):
+                if user_input and not st.session_state.case_submitted:
+                    st.session_state.loading = True
+                    st.session_state.current_results = None  # Clear current results while loading
 
         with col2:
-            if st.button("🔄 حالة جديدة", type="secondary"):
+            def handle_new_case():
                 st.session_state.case_submitted = False
                 st.session_state.clear_input = True
-                st.rerun()
+                st.session_state.current_results = None
+
+            if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
+                pass
 
     # Results section
     with col_results:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## ⚡ نتائج التصنيف")
         
-        if st.session_state.case_submitted and st.session_state.history:
-            latest_entry = st.session_state.history[-1]
+        # Show progress bar when loading
+        if st.session_state.loading:
+            st.markdown("""
+                <div style='text-align: center; padding: 2rem;'>
+                    <h3 style='color: #1e40af; font-family: "Noto Kufi Arabic", sans-serif; margin-bottom: 1rem;'>
+                        جاري تحليل وتصنيف الدعوى...
+                    </h3>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            progress_bar = st.progress(0)
+            for i in range(100):
+                time.sleep(0.01)
+                progress_bar.progress(i + 1)
+            
+            # After progress completes
+            m_calss_example = "أحوال شخصية"
+            s_calss_example = "دعاوى الولاية"
+            case_type_example = "حجر أو رفعه"
+
+            new_entry = {
+                "input": user_input,
+                "main_classification": m_calss_example,
+                "sub_classification": s_calss_example,
+                "case_type": case_type_example,
+                "id": len(st.session_state.history)
+            }
+            
+            st.session_state.current_results = new_entry
+            st.session_state.history.append(new_entry)
+            save_history(st.session_state.history)
+            st.session_state.case_submitted = True
+            st.session_state.loading = False
+            st.rerun()  # Refresh to show results
+
+        elif st.session_state.current_results:
+            latest_entry = st.session_state.current_results
             
             # Main Classification
             st.markdown(f"""
@@ -654,7 +709,7 @@ def main():
             st.markdown("""
                 <div class="results-card" style="text-align: center; padding: 3rem;">
                     <img src="https://img.icons8.com/fluency/96/000000/search.png" style="width: 64px; margin-bottom: 1rem;">
-                    <h3 style="color: #6b7280; font-family: 'Noto Kufi Arabic', sans-serif;">أدخل نص البحث للحصول على التصنيف</h3>
+                    <h3 style="color: #6b7280; font-family: 'Noto Kufi Arabic', sans-serif;">أدخل نص الدعوى للحصول على التصنيف</h3>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -663,38 +718,24 @@ def main():
         if not st.session_state.history:
             st.info("لا يوجد سجل تصنيفات سابقة")
         else:
+            def handle_delete(index):
+                st.session_state.delete_clicked = True
+                st.session_state.delete_index = index
+                st.session_state.history.pop(index)
+                save_history(st.session_state.history)
+
             # Reverse the history list for display
             for i, entry in enumerate(reversed(st.session_state.history)):
-                real_index = len(st.session_state.history) - 1 - i  # Calculate real index for deletion
-                
-                if i > 0:  # Add horizontal line before each entry except the first one
-                    st.markdown("""
-                        <style>
-                            .custom-divider {
-                                display: flex;
-                                align-items: center;
-                                margin: 20px 0; /* Adjust spacing */
-                            }
-                            .custom-divider::before, .custom-divider::after {
-                                content: '';
-                                flex: 1;
-                                border-bottom: 1px solid #ddd;
-                                margin: 0 10px;
-                            }
+                real_index = len(st.session_state.history) - 1 - i
 
-                            .custom-divider span {
-                                font-family: 'Amiri', serif;
-                                font-size: 1.2em;
-                                color: #888;
-                                white-space: nowrap;
-                            }
-                        </style>
+                # Show divider
+                if i > 0:
+                    st.markdown("""
                         <div class="custom-divider">
                             <span>•••</span>
                         </div>
                     """, unsafe_allow_html=True)
 
-                    
                 with st.container():
                     col_content, col_delete = st.columns([0.95, 0.05])
                     
@@ -734,10 +775,8 @@ def main():
                         
                     with col_delete:
                         st.markdown('<div class="delete-button-container">', unsafe_allow_html=True)
-                        if st.button("🗑️", key=f"delete_{real_index}"):  # Use real_index for deletion
-                            st.session_state.history.pop(real_index)
-                            save_history(st.session_state.history)
-                            st.rerun()
+                        if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
+                            pass
                         st.markdown('</div>', unsafe_allow_html=True)
 
                     # Continue with the classifications...
@@ -773,10 +812,14 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-            if st.button("مسح السجل بالكامل", type="secondary"):
+            # Clear all history button
+            def handle_clear_all():
                 st.session_state.history = []
+                st.session_state.current_results = None
                 save_history([])
-                st.rerun()
+
+            if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
+                pass
 
 if __name__ == "__main__":
     main()
