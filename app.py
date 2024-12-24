@@ -9,7 +9,7 @@ from pathlib import Path
 # Configure Streamlit page settings
 st.set_page_config(
     layout="wide",
-    initial_sidebar_state="collapsed",
+    # initial_sidebar_state="collapsed",
     page_title="ناظر",
     page_icon="⚖️",
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
@@ -78,50 +78,10 @@ st.markdown("""
     .logo-container.right-logos img:nth-child(1) { width: 200px; } /* Justice logo */
     .logo-container.right-logos img:nth-child(2) { width: 250px; } /* Gov logo */
 
-    /* ----- Title Styling ----- */
+    /* Simple Title Styling */
     .app-title {
         flex: 1;
         text-align: center;
-        padding: 0;
-        margin: 0 auto;
-        position: relative;
-        width: 200px;
-        height: 200px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        transition: transform 0.3s ease;
-    }
-    
-    .app-title:hover {
-        transform: scale(1.05);
-    }
-    
-    .app-title::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 180px;
-        height: 180px;
-        background: radial-gradient(circle, 
-            rgba(219,234,254,0.2) 0%,
-            rgba(219,234,254,0.1) 70%,
-            rgba(219,234,254,0) 100%);
-        border-radius: 50%;
-        z-index: 0;
-        transition: all 0.3s ease;
-    }
-    
-    .app-title:hover::before {
-        background: radial-gradient(circle, 
-            rgba(219,234,254,0.3) 0%,
-            rgba(219,234,254,0.2) 70%,
-            rgba(219,234,254,0) 100%);
-        width: 190px;
-        height: 190px;
     }
     
     .app-title h1 {
@@ -129,35 +89,14 @@ st.markdown("""
         font-size: 5em;
         font-weight: 700;
         margin: 0;
-        position: relative;
-        z-index: 1;
-        background: linear-gradient(120deg, 
-            #1a365d 0%, 
-            #3b82f6 50%,
-            #1a365d 100%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        transition: all 0.3s ease;
-    }
-
-    /* Title Animation */
-    .app-title h1::after {
-        content: "نـاظـر";
-        position: absolute;
-        top: 2px;
-        left: 0;
-        right: 0;
-        z-index: -1;
-        background: linear-gradient(120deg, #1e40af, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        opacity: 0.4;
+        color: #1e40af;
     }
     
-    @keyframes shine {
-        0% { background-position: -200% center; }
-        100% { background-position: 200% center; }
+    .app-title p {
+        font-family: 'Noto Kufi Arabic', sans-serif;
+        font-size: 1.2em;
+        color: #4a5568;
+        margin: 5px 0 0;
     }
 
     /* ===== MAIN CONTENT SECTION ===== */
@@ -229,7 +168,7 @@ st.markdown("""
 
     /* ===== BUTTONS ===== */
     .stButton > button {
-        background: linear-gradient(135deg, #ef4444 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
         color: white;
         font-family: 'Noto Kufi Arabic', sans-serif;
         font-weight: 600;
@@ -244,8 +183,18 @@ st.markdown("""
 
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        background: linear-gradient(135deg, #dc2626 0%, #2563eb 100%);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    }
+
+    .stButton > button[kind="secondary"] {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        color: white;
+    }
+
+    .stButton > button[kind="secondary"]:hover {
+        background: linear-gradient(135deg, #475569 0%, #334155 100%);
+        box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3);
     }
 
     /* ===== HISTORY SECTION ===== */
@@ -284,9 +233,7 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         animation: shine 3s linear infinite;
-        text-shadow: 
-            2px 2px 4px rgba(0, 0, 0, 0.1),
-            -2px 2px 4px rgba(255, 255, 255, 0.1);
+        text-shadow: none;
     }
     
     .app-title h1::after {
@@ -328,7 +275,7 @@ st.markdown("""
     
     /* Button styling */
     .stButton > button {
-        background: linear-gradient(135deg, #ef4444 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
         color: white;
         font-family: 'Noto Kufi Arabic', sans-serif;
         font-weight: 600;
@@ -343,13 +290,23 @@ st.markdown("""
 
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        background: linear-gradient(135deg, #dc2626 0%, #2563eb 100%);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     }
 
     .stButton > button:active {
         transform: translateY(0);
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+
+    .stButton > button[kind="secondary"] {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        color: white;
+    }
+
+    .stButton > button[kind="secondary"]:hover {
+        background: linear-gradient(135deg, #475569 0%, #334155 100%);
+        box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3);
     }
 
     /* Content section headers */
@@ -684,7 +641,10 @@ def main():
         if not st.session_state.history:
             st.info("لا يوجد سجل تصنيفات سابقة")
         else:
-            for i, entry in enumerate(st.session_state.history):
+            # Reverse the history list for display
+            for i, entry in enumerate(reversed(st.session_state.history)):
+                real_index = len(st.session_state.history) - 1 - i  # Calculate real index for deletion
+                
                 if i > 0:  # Add horizontal line before each entry except the first one
                     st.markdown("""
                         <style>
@@ -752,8 +712,8 @@ def main():
                         
                     with col_delete:
                         st.markdown('<div class="delete-button-container">', unsafe_allow_html=True)
-                        if st.button("🗑️", key=f"delete_{i}"):
-                            st.session_state.history.pop(i)
+                        if st.button("🗑️", key=f"delete_{real_index}"):  # Use real_index for deletion
+                            st.session_state.history.pop(real_index)
                             save_history(st.session_state.history)
                             st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
