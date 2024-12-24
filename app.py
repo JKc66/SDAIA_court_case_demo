@@ -1,13 +1,33 @@
 import streamlit as st
 import json
 import base64
-import os
 from pathlib import Path
 
-# Configure page settings
-st.set_page_config(layout="wide")
+#------------------------------------------------------------------------------
+# PAGE CONFIGURATION
+#------------------------------------------------------------------------------
+# Configure Streamlit page settings
+st.set_page_config(
+    layout="wide",
+    initial_sidebar_state="collapsed",
+    page_title="ناظر",
+    page_icon="⚖️",
+    menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
+)
 
-# Custom CSS with fixes
+# Force light theme
+st.markdown("""
+    <script>
+        var elements = window.parent.document.getElementsByTagName('html');
+        elements[0].style.setProperty('color-scheme', 'light');
+        var navigation = window.parent.document.querySelector('.stApp');
+        if (navigation) navigation.style.setProperty('color-scheme', 'light');
+    </script>
+""", unsafe_allow_html=True)
+
+#------------------------------------------------------------------------------
+# STYLES
+#------------------------------------------------------------------------------
 st.markdown("""
 <style>
     /* Global Fonts */
@@ -21,7 +41,7 @@ st.markdown("""
         font-family: 'Noto Kufi Arabic', sans-serif;
     }
     
-    /* ===== HEADER SECTION ===== */
+    /* Header Layout */
     .header-container {
         display: flex;
         align-items: center;
@@ -31,7 +51,7 @@ st.markdown("""
         width: 100%;
     }
     
-    /* ----- Logo Styling ----- */
+    /* Logo Styling */
     .logo-container {
         display: flex;
         align-items: center;
@@ -180,7 +200,7 @@ st.markdown("""
         padding: 1.5rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
-
+    
     /* Classification Items */
     .classification-item {
         padding: 1rem;
@@ -491,7 +511,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+#------------------------------------------------------------------------------
+# UTILITY FUNCTIONS
+#------------------------------------------------------------------------------
 def load_history():
+    """Load classification history from JSON file"""
     try:
         history_file = Path("history.json")
         if not history_file.exists():
@@ -502,6 +526,7 @@ def load_history():
         return []
 
 def save_history(history):
+    """Save classification history to JSON file"""
     try:
         with open('history.json', 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=4)
@@ -509,10 +534,10 @@ def save_history(history):
         st.error(f"Failed to save history: {e}")
 
 def get_base64_logo(filename):
+    """Load and encode logo files to base64"""
     try:
         current_dir = Path(__file__).parent
         file_path = current_dir / "assets" / filename
-        
         with open(file_path, "rb") as f:
             data = f.read()
             return base64.b64encode(data).decode()
@@ -520,6 +545,9 @@ def get_base64_logo(filename):
         st.warning(f"Could not load logo: {filename}")
         return ""
 
+#------------------------------------------------------------------------------
+# MAIN APPLICATION
+#------------------------------------------------------------------------------
 def main():
     # Initialize session state
     if "history" not in st.session_state:
@@ -529,32 +557,36 @@ def main():
     if "clear_input" not in st.session_state:
         st.session_state.clear_input = False
 
-    # Load all logos with simple filenames
-    najiz_logo = get_base64_logo("logo_najiz.svg")
-    justice_logo = get_base64_logo("justice.svg")
-    sdaia_logo = get_base64_logo("SDAIA.svg")
-    gov_logo = get_base64_logo("DigitaGov.png.svg")
+    # Load logos
+    logos = {
+        'najiz': get_base64_logo("logo_najiz.svg"),
+        'justice': get_base64_logo("justice.svg"),
+        'sdaia': get_base64_logo("SDAIA.svg"),
+        'gov': get_base64_logo("DigitaGov.png.svg")
+    }
 
-    # Updated header structure with all logos
+    # Render header
     st.markdown(f'''
         <div class="header-container">
             <div class="logo-container left-logos">
-                <img src="data:image/svg+xml;base64,{najiz_logo}" alt="Najiz Logo">
-                <img src="data:image/svg+xml;base64,{sdaia_logo}" alt="SDAIA Logo">
+                <img src="data:image/svg+xml;base64,{logos['najiz']}" alt="Najiz Logo">
+                <img src="data:image/svg+xml;base64,{logos['sdaia']}" alt="SDAIA Logo">
             </div>
             <div class="app-title">
                 <h1>نـاظـر</h1>
                 <p>نظام تصنيف القضايا الذكي</p>
             </div>
             <div class="logo-container right-logos">
-                <img src="data:image/svg+xml;base64,{justice_logo}" alt="Justice Logo">
-                <img src="data:image/svg+xml;base64,{gov_logo}" alt="Digital Gov Logo">
+                <img src="data:image/svg+xml;base64,{logos['justice']}" alt="Justice Logo">
+                <img src="data:image/svg+xml;base64,{logos['gov']}" alt="Digital Gov Logo">
             </div>
         </div>
     ''', unsafe_allow_html=True)
 
+    # Create main layout
     col_input, col_results = st.columns([1, 1])
 
+    # Input section
     with col_input:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## 📝 البحث ")
@@ -597,6 +629,7 @@ def main():
                 st.session_state.clear_input = True
                 st.rerun()
 
+    # Results section
     with col_results:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## ⚡ نتائج التصنيف")
@@ -646,6 +679,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
+    # History section
     with st.expander("📜 **سجل التصنيفات السابقة**"):
         if not st.session_state.history:
             st.info("لا يوجد سجل تصنيفات سابقة")
