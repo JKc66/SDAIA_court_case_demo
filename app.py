@@ -6,23 +6,12 @@ import time
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
 #------------------------------------------------------------------------------
-# Configure Streamlit page settings
 st.set_page_config(
     layout="wide",
     page_title="ناظر",
     page_icon="⚖️",
     menu_items={'Get Help': None, 'Report a bug': None, 'About': None}
 )
-
-# Force light theme
-st.markdown("""
-    <script>
-        var elements = window.parent.document.getElementsByTagName('html');
-        elements[0].style.setProperty('color-scheme', 'light');
-        var navigation = window.parent.document.querySelector('.stApp');
-        if (navigation) navigation.style.setProperty('color-scheme', 'light');
-    </script>
-""", unsafe_allow_html=True)
 
 #------------------------------------------------------------------------------
 # STYLES

@@ -1,0 +1,18 @@
+[theme]
+primaryColor = "#1e40af"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8fafc"
+textColor = "#1f2937"
+font = "sans serif"
+
+[server]
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+fastRerenderMinutes = 0
+
+[logger]
+level = "warning"
