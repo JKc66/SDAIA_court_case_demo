@@ -11,8 +11,5 @@ enableStaticServing = true
 [browser]
 gatherUsageStats = false
 
-[runner]
-fastRerenderMinutes = 0
-
 [logger]
 level = "warning"
