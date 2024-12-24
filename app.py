@@ -523,7 +523,7 @@ def get_base64_logo(filename):
     """Load and encode logo files to base64"""
     try:
         current_dir = Path(__file__).parent
-        file_path = current_dir / "assets" / filename
+        file_path = current_dir / "static" / filename
         with open(file_path, "rb") as f:
             data = f.read()
             return base64.b64encode(data).decode()
