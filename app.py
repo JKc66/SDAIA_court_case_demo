@@ -222,7 +222,6 @@ st.markdown("""
         font-size: 6em;
         font-weight: 700;
         margin: 0;
-        letter-spacing: 2px;
         position: relative;
         background: linear-gradient(120deg, 
             #1a365d 0%, 
@@ -232,32 +231,34 @@ st.markdown("""
             #1a365d 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        animation: shine 3s linear infinite;
-        text-shadow: none;
+        cursor: default;
+        transition: all 0.3s ease;
     }
     
-    .app-title h1::after {
-        content: "نـاظـر";
-        position: absolute;
-        top: 2px;
-        left: 0;
-        right: 0;
-        z-index: -1;
-        background: linear-gradient(120deg, #1e40af, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        opacity: 0.4;
+    .app-title h1:hover {
+        animation: circleScatter 0.8s ease-in-out;
     }
     
-    @keyframes shine {
+    @keyframes circleScatter {
         0% {
-            background-position: -200% center;
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+            filter: blur(0);
+        }
+        50% {
+            transform: scale(1.2) rotate(5deg);
+            opacity: 0.7;
+            filter: blur(2px);
+            letter-spacing: 0.2em;
         }
         100% {
-            background-position: 200% center;
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+            filter: blur(0);
+            letter-spacing: 0;
         }
     }
-    
+
     .app-title p {
         font-family: 'Noto Kufi Arabic', sans-serif;
         font-size: 1.2em;
@@ -466,6 +467,27 @@ st.markdown("""
         color: #dc2626;
     }
 </style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const title = document.querySelector('.app-title h1');
+        
+        title.addEventListener('mouseleave', function() {
+            this.style.animation = 'none';
+            this.offsetHeight; // Trigger reflow
+            this.style.animation = null;
+        });
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const title = document.querySelector('.app-title h1');
+        
+        title.addEventListener('animationend', function() {
+            this.style.animation = '';
+        });
+    });
+</script>
+
 """, unsafe_allow_html=True)
 
 #------------------------------------------------------------------------------
