@@ -73,13 +73,16 @@ header {
     font-size: 5em;
     font-weight: 700;
     margin: 0;
-    color: #1e40af;
+    background: linear-gradient(120deg, #1C355E 0%, #EA6852 50%, #FFB548 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
 }
 
 .app-title p {
     font-family: 'Noto Kufi Arabic', sans-serif;
     font-size: 1.2em;
-    color: #4a5568;
+    color: #101820;
     margin: 5px 0 0;
 }
 
@@ -132,12 +135,20 @@ header {
     font-size: 1.2em !important;
     line-height: 1.6 !important;
     padding: 1rem !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
+    transition: all 0.3s ease;
 }
 
 .stTextArea textarea::placeholder {
     font-family: 'Amiri', serif !important;
     font-size: 1.2em !important;
     color: #6b7280 !important;
+}
+
+.stTextArea textarea:focus {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.15);
 }
 
 /* Classification Results */
@@ -161,29 +172,64 @@ header {
 
 .classification-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Main Classification */
 .main-classification {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 1px solid #fbbf24;
+    background: linear-gradient(135deg, #FFB548 0%, #EA6852 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 181, 72, 0.2);
 }
 
+.main-classification .classification-label,
+.main-classification .classification-value {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.main-classification .classification-icon {
+    background: linear-gradient(135deg, #FFE4B5 0%, #FFDAB9 100%);
+}
+
+/* Sub Classification */
 .sub-classification {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    border: 1px solid #60a5fa;
+    background: linear-gradient(135deg, #625D9C 0%, #1C355E 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(98, 93, 156, 0.2);
 }
 
+.sub-classification .classification-label,
+.sub-classification .classification-value {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sub-classification .classification-icon {
+    background: linear-gradient(135deg, #8E89D4 0%, #7A76B7 100%);
+}
+
+/* Case Type */
 .case-type {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    border: 1px solid #34d399;
+    background: linear-gradient(135deg, #6ABF4B 0%, #00AE8D 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(106, 191, 75, 0.2);
 }
 
-/* Classification Labels */
+.case-type .classification-label,
+.case-type .classification-value {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.case-type .classification-icon {
+    background: linear-gradient(135deg, #98E87A 0%, #7ACC5E 100%);
+}
+
+/* Classification Labels - General */
 .classification-label {
     font-family: 'Noto Kufi Arabic', sans-serif;
     font-weight: 700;
-    color: #1f2937;
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
@@ -192,7 +238,6 @@ header {
 
 .classification-value {
     font-family: 'Noto Kufi Arabic', sans-serif;
-    color: #374151;
     font-size: 1.1em;
 }
 
@@ -202,28 +247,29 @@ header {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 50%;
     margin-left: 0.5rem;
 }
 
 /* Case Text */
 .case-text {
-    background: linear-gradient(135deg, #ffffff, #f9f9f9); 
-    border: 1px solid #ddd; 
-    border-radius: 10px; 
-    padding: 15px; 
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
+    border-radius: 10px;
+    padding: 15px;
     margin-bottom: 15px;
     font-family: 'Amiri', serif;
     color: #444;
     font-size: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .case-text:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     transform: scale(1.02);
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.15);
 }
 
 .case-text strong {
@@ -233,7 +279,7 @@ header {
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #1C355E 0%, #625D9C 100%);
     color: white;
     font-family: 'Noto Kufi Arabic', sans-serif;
     font-weight: 600;
@@ -244,22 +290,23 @@ header {
     width: 100%;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.2);
 }
 
 .stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #625D9C 0%, #1C355E 100%);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.3);
 }
 
 .stButton > button[kind="secondary"] {
-    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    background: linear-gradient(135deg, #00C1DE 0%, #00AE8D 100%);
     color: white;
+    box-shadow: 0 4px 15px rgba(0, 193, 222, 0.2);
 }
 
 .stButton > button[kind="secondary"]:hover {
-    background: linear-gradient(135deg, #475569 0%, #334155 100%);
-    box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3);
+    background: linear-gradient(135deg, #00AE8D 0%, #00C1DE 100%);
+    box-shadow: 0 8px 25px rgba(0, 193, 222, 0.3);
 }
 
 /* Delete Button */
@@ -273,8 +320,16 @@ header {
     padding: 0 10px;
     height: 40px;
     line-height: 40px;
-    background-color: transparent;
-    color: #dc2626;
+    background: linear-gradient(135deg, #EA6852 0%, #FFB548 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    box-shadow: none;
+}
+
+.delete-button-container .stButton button:hover {
+    background: linear-gradient(135deg, #FFB548 0%, #EA6852 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Loading States */
@@ -291,27 +346,35 @@ header {
 .loading-message {
     text-align: center;
     padding: 2rem;
+    background: linear-gradient(135deg, rgba(28, 53, 94, 0.05) 0%, rgba(0, 174, 141, 0.05) 100%);
+    border-radius: 15px;
 }
 
 .loading-message h3 {
-    color: #1e40af;
+    color: #1C355E;
     font-family: "Noto Kufi Arabic", sans-serif;
     margin-bottom: 1rem;
+    background: linear-gradient(120deg, #1C355E 0%, #00AE8D 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Progress Bar */
 .stProgress .st-bo {
-    background-color: #1e40af;
+    background: linear-gradient(90deg, #00AE8D 0%, #00C1DE 100%);
 }
 
 .stProgress .st-bp {
-    background-color: #bfdbfe;
+    background: linear-gradient(90deg, rgba(0, 174, 141, 0.1) 0%, rgba(0, 193, 222, 0.1) 100%);
 }
 
 /* Empty States */
 .empty-results-card {
     text-align: center;
     padding: 3rem;
+    background: linear-gradient(135deg, rgba(28, 53, 94, 0.05) 0%, rgba(98, 93, 156, 0.05) 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
 }
 
 .empty-results-card img {
@@ -320,13 +383,65 @@ header {
 }
 
 .empty-results-card h3 {
-    color: #6b7280;
+    color: #101820;
     font-family: 'Noto Kufi Arabic', sans-serif;
 }
 
 /* Dividers */
 .custom-divider {
+    position: relative;
     text-align: center;
-    padding: 1rem 0;
-    color: #6b7280;
+    padding: 1.5rem 0;
+    margin: 2rem 0;
+    overflow: hidden;
+}
+
+.custom-divider::before,
+.custom-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        rgba(28, 53, 94, 0.05) 0%,
+        rgba(28, 53, 94, 0.2) 50%,
+        rgba(98, 93, 156, 0.2) 100%
+    );
+    transform: translateY(-50%);
+}
+
+.custom-divider::before {
+    right: 52%;
+}
+
+.custom-divider::after {
+    left: 52%;
+}
+
+.custom-divider span {
+    position: relative;
+    background: linear-gradient(120deg, #1C355E 0%, #625D9C 50%, #EA6852 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 1.1em;
+    padding: 0 15px;
+    transition: all 0.3s ease;
+}
+
+.custom-divider:hover span {
+    transform: scale(1.05);
+    background: linear-gradient(120deg, #EA6852 0%, #625D9C 50%, #1C355E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.custom-divider:hover::before,
+.custom-divider:hover::after {
+    background: linear-gradient(90deg, 
+        rgba(234, 104, 82, 0.1) 0%,
+        rgba(98, 93, 156, 0.3) 50%,
+        rgba(28, 53, 94, 0.3) 100%
+    );
 } 
