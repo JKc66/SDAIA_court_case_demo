@@ -130,7 +130,7 @@ def main():
             key="rtl_input",
             placeholder="الرجاء إدخال نص الدعوى هنا للتصنيف...",
             disabled=st.session_state.case_submitted,
-            value=" " if st.session_state.clear_input else None
+            value="" if st.session_state.clear_input else None
         )
         
         if st.session_state.clear_input:
@@ -139,7 +139,7 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             if st.button("⚖️ تصنيف الدعوى", type="primary", disabled=st.session_state.case_submitted):
-                if user_input and not st.session_state.case_submitted:
+                if user_input and user_input.strip():  # Check if input is not empty
                     st.session_state.loading = True
                     st.session_state.current_results = None  # Clear current results while loading
 
@@ -148,6 +148,9 @@ def main():
                 st.session_state.case_submitted = False
                 st.session_state.clear_input = True
                 st.session_state.current_results = None
+                st.session_state.loading = False
+                if "rtl_input" in st.session_state:
+                    del st.session_state.rtl_input  # Clear the input state completely
 
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
