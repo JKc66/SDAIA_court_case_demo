@@ -98,6 +98,8 @@ def main():
         'gov': get_base64_logo("DigitaGov.png.svg")
     }
 
+    notification_icon = "✅"
+
     # Render header
     st.markdown(f'''
         <div class="header-container">
@@ -248,6 +250,7 @@ def main():
                 st.session_state.delete_index = index
                 st.session_state.history.pop(index)
                 save_history(st.session_state.history)
+                st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
 
             # Reverse the history list for display
             for i, entry in enumerate(reversed(st.session_state.history)):
@@ -318,6 +321,7 @@ def main():
                 st.session_state.history = []
                 st.session_state.current_results = None
                 save_history([])
+                st.toast("تم مسح السجل بالكامل", icon=notification_icon)
 
             if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
                 pass
