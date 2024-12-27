@@ -1,0 +1,332 @@
+/* Global Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri&family=Scheherazade+New:wght@700&display=swap');
+
+/* Global RTL settings */
+body {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+}
+
+/* Layout & Spacing */
+.block-container {
+    padding-top: 2rem;
+    margin-top: 0;
+}
+
+.main .block-container {
+    padding: 1rem 4rem;
+    margin-top: 0;
+}
+
+header {
+    padding: 1rem !important;
+    margin: 0 !important;
+}
+
+/* Header Layout */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    margin: 0;
+    width: 100%;
+}
+
+/* Logo Styling */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+}
+
+.logo-container.left-logos,
+.logo-container.right-logos {
+    flex: 0 0 450px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo-container img {
+    height: auto;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-container.left-logos img:nth-child(1) { width: 260px; } /* Najiz logo */
+.logo-container.left-logos img:nth-child(2) { width: 230px; } /* SDAIA logo */
+.logo-container.right-logos img:nth-child(1) { width: 200px; } /* Justice logo */
+.logo-container.right-logos img:nth-child(2) { width: 250px; } /* Gov logo */
+
+/* Title Styling */
+.app-title {
+    flex: 1;
+    text-align: center;
+}
+
+.app-title h1 {
+    font-family: 'Scheherazade New', serif;
+    font-size: 5em;
+    font-weight: 700;
+    margin: 0;
+    color: #1e40af;
+}
+
+.app-title p {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 1.2em;
+    color: #4a5568;
+    margin: 5px 0 0;
+}
+
+/* Title Animation */
+@keyframes circleScatter {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        filter: blur(0);
+    }
+    50% {
+        transform: scale(1.2) rotate(5deg);
+        opacity: 0.7;
+        filter: blur(2px);
+        letter-spacing: 0.2em;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        filter: blur(0);
+        letter-spacing: 0;
+    }
+}
+
+.app-title h1:hover {
+    animation: circleScatter 0.7s ease-in-out;
+}
+
+/* Main Content Section */
+.main-container {
+    padding: 5px 10px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Input/Results Area */
+.content-section {
+    margin-top: 1rem;
+}
+
+.stTextArea {
+    margin-top: -1rem;
+}
+
+.stTextArea textarea {
+    direction: rtl;
+    text-align: right;
+    margin-bottom: 0;
+    font-family: 'Amiri', serif !important;
+    font-size: 1.2em !important;
+    line-height: 1.6 !important;
+    padding: 1rem !important;
+}
+
+.stTextArea textarea::placeholder {
+    font-family: 'Amiri', serif !important;
+    font-size: 1.2em !important;
+    color: #6b7280 !important;
+}
+
+/* Classification Results */
+.results-section {
+    margin-top: 0.5rem;
+    background-color: #f8fafc;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Classification Items */
+.classification-item {
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.75rem 0;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.classification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.main-classification {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fbbf24;
+}
+
+.sub-classification {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1px solid #60a5fa;
+}
+
+.case-type {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 1px solid #34d399;
+}
+
+/* Classification Labels */
+.classification-label {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.classification-value {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    color: #374151;
+    font-size: 1.1em;
+}
+
+.classification-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    margin-left: 0.5rem;
+}
+
+/* Case Text */
+.case-text {
+    background: linear-gradient(135deg, #ffffff, #f9f9f9); 
+    border: 1px solid #ddd; 
+    border-radius: 10px; 
+    padding: 15px; 
+    margin-bottom: 15px;
+    font-family: 'Amiri', serif;
+    color: #444;
+    font-size: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.case-text:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+.case-text strong {
+    color: #333;
+    font-size: 20px;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    color: white;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-weight: 600;
+    padding: 0.5rem 2rem;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.3s ease;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
+.stButton > button[kind="secondary"] {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
+}
+
+.stButton > button[kind="secondary"]:hover {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3);
+}
+
+/* Delete Button */
+.delete-button-container {
+    display: flex;
+    align-items: start;
+    padding-top: 10px;
+}
+
+.delete-button-container .stButton button {
+    padding: 0 10px;
+    height: 40px;
+    line-height: 40px;
+    background-color: transparent;
+    color: #dc2626;
+}
+
+/* Loading States */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.loading-message h3 {
+    color: #1e40af;
+    font-family: "Noto Kufi Arabic", sans-serif;
+    margin-bottom: 1rem;
+}
+
+/* Progress Bar */
+.stProgress .st-bo {
+    background-color: #1e40af;
+}
+
+.stProgress .st-bp {
+    background-color: #bfdbfe;
+}
+
+/* Empty States */
+.empty-results-card {
+    text-align: center;
+    padding: 3rem;
+}
+
+.empty-results-card img {
+    width: 64px;
+    margin-bottom: 1rem;
+}
+
+.empty-results-card h3 {
+    color: #6b7280;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+}
+
+/* Dividers */
+.custom-divider {
+    text-align: center;
+    padding: 1rem 0;
+    color: #6b7280;
+} 
