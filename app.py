@@ -3,6 +3,11 @@ import json
 import base64
 from pathlib import Path
 import time
+import os
+import json
+import time
+import google.generativeai as genai
+
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
 #------------------------------------------------------------------------------
@@ -67,6 +72,80 @@ def get_base64_logo(filename):
         return ""
 
 #------------------------------------------------------------------------------
+# Gemini Communication
+#------------------------------------------------------------------------------
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
+def upload_to_gemini(path, mime_type=None):
+  """Uploads the given file to Gemini.
+
+  See https://ai.google.dev/gemini-api/docs/prompting_with_media
+  """
+  file = genai.upload_file(path, mime_type=mime_type)
+  print(f"Uploaded file '{file.display_name}' as: {file.uri}")
+  return file
+
+def wait_for_files_active(files):
+  """Waits for the given files to be active.
+
+  Some files uploaded to the Gemini API need to be processed before they can be
+  used as prompt inputs. The status can be seen by querying the file's "state"
+  field.
+
+  This implementation uses a simple blocking polling loop. Production code
+  should probably employ a more sophisticated approach.
+  """
+  print("Waiting for file processing...")
+  for name in (file.name for file in files):
+    file = genai.get_file(name)
+    while file.state.name == "PROCESSING":
+      print(".", end="", flush=True)
+      time.sleep(10)
+      file = genai.get_file(name)
+    if file.state.name != "ACTIVE":
+      raise Exception(f"File {file.name} failed to process")
+  print("...all files ready")
+  print()
+
+# Create the model
+generation_config = {
+  "temperature": 0,
+  "top_p": 0.95,
+  "top_k": 40,
+  "max_output_tokens": 8192,
+  "response_mime_type": "application/json",
+}
+
+model = genai.GenerativeModel(
+  model_name="gemini-2.0-flash-exp",
+  generation_config=generation_config,
+  system_instruction="according to the categories mentinoed. which category does the provided text fit in the most. what is the most appropriate subcategory? and what is the most appropriate type? the output should be in arabic. make the output in json format. the keys are: category, subcategory, type, explanation.",
+)
+
+# TODO Make these files available on the local file system
+# You may need to update the file paths
+files = [
+  upload_to_gemini("details.pdf", mime_type="application/pdf"),
+]
+
+# Some files have a processing delay. Wait for them to be ready.
+wait_for_files_active(files)
+
+chat_session = model.start_chat(
+  history=[
+    {
+      "role": "user",
+      "parts": [
+        files[0],
+      ],
+    },
+  ]
+)
+
+#response = chat_session.send_message("INSERT_INPUT_HERE")
+    
+
+#------------------------------------------------------------------------------
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
 def main():
@@ -124,13 +203,13 @@ def main():
     # Input section
     with col_input:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
-        st.markdown("## 📝 البحث ")
+        st.markdown("## 📝 نص الدعوى ")
 
         user_input = st.text_area(
             label=" ",
             height=300,
             key="rtl_input",
-            placeholder="الرجاء إدخال نص الدعوى هنا للتصنيف...",
+            placeholder="الرجاء إدخال النص هنا للتصنيف...",
             disabled=st.session_state.case_submitted,
             value="" if st.session_state.clear_input else None
         )
@@ -171,14 +250,28 @@ def main():
             """, unsafe_allow_html=True)
             
             progress_bar = st.progress(0)
-            for i in range(100):
-                time.sleep(0.01)
-                progress_bar.progress(i + 1)
+            print("Sending message to Gemini...")
+            response = chat_session.send_message(user_input)
+            try:
+                data = json.loads(response.text)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON: {e}")
+                data = False
+
+
+            # for i in range(100):
+            #     time.sleep(0.01)
+            #     progress_bar.progress(i + 1)
             
             # After progress completes
-            m_calss_example = "أحوال شخصية"
-            s_calss_example = "دعاوى الولاية"
-            case_type_example = "حجر أو رفعه"
+            if data == False:
+                m_calss_example = "-"
+                s_calss_example = "-"
+                case_type_example = "-"
+            else:
+                m_calss_example = data['category']
+                s_calss_example = data['subcategory']
+                case_type_example = data['type']
 
             new_entry = {
                 "input": user_input,
