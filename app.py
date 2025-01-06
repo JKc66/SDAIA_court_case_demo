@@ -74,7 +74,11 @@ def get_base64_logo(filename):
 #------------------------------------------------------------------------------
 # Gemini Communication
 #------------------------------------------------------------------------------
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    st.error("Please set the GEMINI_API_KEY in your Streamlit secrets.")
+    st.stop()
+genai.configure(api_key=GEMINI_API_KEY)
 
 def upload_to_gemini(path, mime_type=None):
   """Uploads the given file to Gemini.
