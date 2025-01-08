@@ -31,7 +31,6 @@ def load_css():
     with open(css_file, 'r', encoding='utf-8') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-
 # Load CSS and JavaScript
 load_css()
 
@@ -74,16 +73,13 @@ def get_base64_logo(filename):
 #------------------------------------------------------------------------------
 
 def upload_to_gemini(path, mime_type=None):
-    """Uploads the given file to Gemini.
-
-    See https://ai.google.dev/gemini-api/docs/prompting_with_media
-    """
+    """Uploads the given file to Gemini."""
     try:
         # Resolve the file path relative to the app directory
         file_path = Path(__file__).parent / path
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-            
+
         file = genai.upload_file(str(file_path), mime_type=mime_type)
         print(f"Uploaded file '{file.display_name}' as: {file.uri}")
         return file
@@ -98,7 +94,7 @@ def wait_for_files_active(files):
         for file in files:
             if file is None:
                 raise Exception("Invalid file object")
-            
+
             name = file.name
             file = genai.get_file(name)
             while file.state.name == "PROCESSING":
@@ -122,9 +118,9 @@ def initialize_gemini(key_id):
         if not api_key:
             st.error(f"API key {key_id} not found. Please check your configuration.")
             return None
-            
+
         genai.configure(api_key=api_key)
-        
+
         # Create the model
         generation_config = {
             "temperature": 0,
@@ -175,9 +171,6 @@ def initialize_gemini(key_id):
         st.error(f"Failed to initialize Gemini: {e}")
         return None
 
-#response = chat_session.send_message("INSERT_INPUT_HERE")
-    
-
 #------------------------------------------------------------------------------
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
@@ -193,7 +186,7 @@ def main():
         st.session_state.delete_index = None
     if "key_id" not in st.session_state:
         st.session_state.key_id = randint(1, NUM_KEYS)
-        
+
     # Initialize session state
     if "history" not in st.session_state:
         st.session_state.history = load_history()
@@ -241,7 +234,7 @@ def main():
     with col_input:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## 📝 نص الدعوى ")
-        
+
         if "chat_session" in st.session_state:
             user_input = st.text_area(
                 label=" ",
@@ -257,10 +250,10 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             st.session_state.loading = True
-            
+
             # Try to initialize with current key
             initialization = initialize_gemini(st.session_state.key_id)
-            
+
             # If initialization fails, try other keys
             if initialization is None:
                 for i in range(1, NUM_KEYS + 1):
@@ -269,12 +262,12 @@ def main():
                         initialization = initialize_gemini(i)
                         if initialization is not None:
                             break
-                
+
                 if initialization is None:
                     st.error("Failed to initialize the system. Please contact support.")
                     st.session_state.loading = False
                     return
-            
+
             st.session_state.chat_session = initialization
             st.session_state.loading = False
             st.rerun()
@@ -301,7 +294,7 @@ def main():
     with col_results:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## ⚡ نتائج التصنيف")
-        
+
         if st.session_state.loading:
             st.markdown("""
                 <div class="custom-spinner-container">
@@ -309,7 +302,7 @@ def main():
                     <div class="spinner-text">جاري تحليل وتصنيف الدعوى...</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             with st.spinner(''):
                 print("Sending message to Gemini...")
                 start_time = time.time()  # Start timing
@@ -322,25 +315,28 @@ def main():
                 except json.JSONDecodeError as e:
                     print(f"Error decoding JSON: {e}")
                     data = False
-            
-            # After progress 
+
+            # After progress
             if data == False:
                 m_calss_example = "-"
                 s_calss_example = "-"
                 case_type_example = "-"
+                explanation = "-"
             else:
                 m_calss_example = data['category']
                 s_calss_example = data['subcategory']
                 case_type_example = data['type']
+                explanation = data.get('explanation', '-') # Handle cases where explanation might be missing
 
             new_entry = {
                 "input": user_input,
                 "main_classification": m_calss_example,
                 "sub_classification": s_calss_example,
                 "case_type": case_type_example,
+                "explanation": explanation,
                 "id": len(st.session_state.history)
             }
-            
+
             st.session_state.current_results = new_entry
             st.session_state.history.append(new_entry)
             save_history(st.session_state.history)
@@ -350,7 +346,7 @@ def main():
 
         elif st.session_state.current_results:
             latest_entry = st.session_state.current_results
-            
+
             st.markdown(f"""
                 <div class="classification-item main-classification">
                     <div class="classification-label">
@@ -360,7 +356,7 @@ def main():
                     <div class="classification-value">{latest_entry["main_classification"]}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             st.markdown(f"""
                 <div class="classification-item sub-classification">
                     <div class="classification-label">
@@ -370,7 +366,7 @@ def main():
                     <div class="classification-value">{latest_entry["sub_classification"]}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             st.markdown(f"""
                 <div class="classification-item case-type">
                     <div class="classification-label">
@@ -380,7 +376,20 @@ def main():
                     <div class="classification-value">{latest_entry["case_type"]}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
+            if latest_entry["explanation"]:
+                st.markdown(f"""
+                    <div class="info-link-container">
+                        <a href="#" class="info-link">
+                            شرح اضافي
+                            <span class="info-icon">i</span>
+                        </a>
+                        <div class="info-bubble">
+                            {latest_entry["explanation"]}
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+
         else:
             st.markdown("""
                 <div class="results-card empty-results-card">
@@ -400,24 +409,24 @@ def main():
     if st.session_state.history:
         # Convert history to DataFrame for display
         df_display = pd.DataFrame(st.session_state.history)
-        df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input']]
-        df_display.columns = ['نوع الدعوى', 'التصنيف الفرعي', 'التصنيف الرئيسي', 'نص الدعوى']
+        df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input', 'explanation']]
+        df_display.columns = ['نوع الدعوى', 'التصنيف الفرعي', 'التصنيف الرئيسي', 'نص الدعوى', 'شرح']
 
         # Create a different DataFrame for download with original order
         df_download = pd.DataFrame(st.session_state.history)
-        df_download = df_download[['input', 'main_classification', 'sub_classification', 'case_type']]
-        df_download.columns = ['نص الدعوى', 'التصنيف الرئيسي', 'التصنيف الفرعي', 'نوع الدعوى']
+        df_download = df_download[['input', 'main_classification', 'sub_classification', 'case_type', 'explanation']]
+        df_download.columns = ['نص الدعوى', 'التصنيف الرئيسي', 'التصنيف الفرعي', 'نوع الدعوى', 'شرح']
 
         # Create Excel file in memory
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df_download.to_excel(writer, index=False, sheet_name='Sheet1')
-            
+
             worksheet = writer.sheets['Sheet1']
-            
+
             # Set RTL direction
             worksheet.sheet_view.rightToLeft = True
-            
+
             # Auto-fit columns
             for column in worksheet.columns:
                 max_length = 0
@@ -430,7 +439,7 @@ def main():
                         pass
                 adjusted_width = (max_length + 2)
                 worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
-                
+
             # Set font for better Arabic display
             for row in worksheet.rows:
                 for cell in row:
@@ -442,7 +451,7 @@ def main():
 
         # Create columns for download buttons
         col1, col2 = st.columns(2)
-        
+
         # Excel download in first column
         with col1:
             st.download_button(
@@ -452,7 +461,7 @@ def main():
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
-        
+
         # JSON download in second column
         with col2:
             json_str = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
@@ -466,16 +475,16 @@ def main():
 
         # Create tabs for different views
         tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
-        
+
         with tab1:
             # Display history in detailed view
             notification_icon = "✅"
-            
+
             # Initialize visibility states for each history item
             for i in range(len(st.session_state.history)):
                 if f"item_visible_{i}" not in st.session_state:
                     st.session_state[f"item_visible_{i}"] = True
-            
+
             def handle_delete(index):
                 st.session_state[f"item_visible_{index}"] = False
                 st.session_state.history.pop(index)
@@ -486,7 +495,7 @@ def main():
             visible_count = 0
             for i, entry in enumerate(reversed(st.session_state.history)):
                 real_index = len(st.session_state.history) - 1 - i
-                
+
                 if st.session_state.get(f"item_visible_{real_index}", True):
                     if visible_count > 0:
                         st.markdown("""
@@ -499,15 +508,28 @@ def main():
                     with st.container():
                         st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
                         col_content, col_delete = st.columns([0.95, 0.05])
-                        
+
                         with col_content:
                             st.markdown(f"""
                             <div class="case-text">
                                 <strong>البحث:</strong> {entry["input"]}
                             </div>
-                            """, 
+                            """,
                             unsafe_allow_html=True)
-                            
+
+                            if entry["explanation"]:
+                                st.markdown(f"""
+                                    <div class="info-link-container">
+                                        <a href="#" class="info-link">
+                                            شرح اضافي
+                                            <span class="info-icon">i</span>
+                                        </a>
+                                        <div class="info-bubble">
+                                            {entry["explanation"]}
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+
                         with col_delete:
                             st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
                             if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
@@ -525,7 +547,7 @@ def main():
                                 <div class="classification-value">{entry["main_classification"]}</div>
                             </div>
                         """, unsafe_allow_html=True)
-                            
+
                         st.markdown(f"""
                             <div class="classification-item sub-classification">
                                 <div class="classification-label">
@@ -535,7 +557,7 @@ def main():
                                 <div class="classification-value">{entry["sub_classification"]}</div>
                             </div>
                         """, unsafe_allow_html=True)
-                            
+
                         st.markdown(f"""
                             <div class="classification-item case-type">
                                 <div class="classification-label">
