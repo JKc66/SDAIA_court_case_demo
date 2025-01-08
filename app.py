@@ -145,7 +145,7 @@ def initialize_gemini(key_id):
 
         # Upload and process the categories file
         files = [
-            upload_to_gemini("classes\classes_with_no_desc.txt", mime_type="text/plain"),
+            upload_to_gemini(Path("classes") / "classes_with_no_desc.txt", mime_type="text/plain"),
         ]
 
         # Check if file upload was successful
