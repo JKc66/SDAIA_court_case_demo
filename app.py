@@ -162,9 +162,6 @@ def main():
         st.session_state.delete_index = None
     if "key_id" not in st.session_state:
         st.session_state.key_id = randint(1, NUM_KEYS)
-    if "chat_session" not in st.session_state:
-        with st.spinner('يتم التهيئة...'):
-            st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
         
     # Initialize session state
     if "history" not in st.session_state:
@@ -215,6 +212,9 @@ def main():
     with col_input:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## 📝 نص الدعوى ")
+        
+        if "chat_session" not in st.session_state:
+            st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
 
         user_input = st.text_area(
             label=" ",
@@ -260,7 +260,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             
-            progress_bar = st.progress(0)
+            #progress_bar = st.progress(0)
             print("Sending message to Gemini...")
             response = st.session_state.chat_session.send_message(user_input)
             try:
