@@ -8,6 +8,7 @@ import json
 import time
 import google.generativeai as genai
 from random import randint
+import datetime
 
 NUM_KEYS = 5
 #------------------------------------------------------------------------------
@@ -108,7 +109,7 @@ def wait_for_files_active(files):
     print("...all files ready")
     print()
 
-@st.cache_data
+@st.cache_data(ttl=datetime.timedelta(days=2))
 def initialize_gemini(key_id):
     genai.configure(api_key=os.environ[f"GEMINI_API_KEY_{key_id}"])
     # Create the model
@@ -162,7 +163,8 @@ def main():
     if "key_id" not in st.session_state:
         st.session_state.key_id = randint(1, NUM_KEYS)
     if "chat_session" not in st.session_state:
-        st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
+        with st.spinner('يتم التهيئة...'):
+            st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
         
     # Initialize session state
     if "history" not in st.session_state:
