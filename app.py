@@ -213,15 +213,25 @@ def main():
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## 📝 نص الدعوى ")
         
-        user_input = st.text_area(
-            label=" ",
-            height=300,
-            key="rtl_input",
-            placeholder="الرجاء إدخال النص هنا للتصنيف...",
-            disabled=st.session_state.case_submitted,
-            value="" if st.session_state.clear_input else None
-        )
-        
+        if "chat_session" in st.session_state:
+            user_input = st.text_area(
+                label=" ",
+                height=300,
+                key="rtl_input",
+                placeholder="الرجاء إدخال النص هنا للتصنيف...",
+                disabled=st.session_state.case_submitted,
+                value="" if st.session_state.clear_input else None
+            )
+        else:
+            st.markdown("""
+                <div class="loading-message">
+                    <h3>يتم تهيئة النظام...</h3>
+                </div>
+            """, unsafe_allow_html=True)
+            st.session_state.loading = True
+            st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
+            st.session_state.loading = False
+            
         if st.session_state.clear_input:
             st.session_state.clear_input = False
 
@@ -243,17 +253,6 @@ def main():
 
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
-
-        if "chat_session" not in st.session_state:
-            with col_results:
-                st.markdown("""
-                    <div class="loading-message">
-                        <h3>يتم تهيئة النظام...</h3>
-                    </div>
-                """, unsafe_allow_html=True)
-                st.session_state.loading = True
-                st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
-                st.session_state.loading = False
 
     # Results section
     with col_results:
