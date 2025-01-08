@@ -119,7 +119,15 @@ def initialize_gemini(key_id):
     model = genai.GenerativeModel(
     model_name="gemini-2.0-flash-exp",
     generation_config=generation_config,
-system_instruction="according to the categories mentinoed. which category does the provided text fit in the most? what is the most appropriate subcategory? and what is the most appropriate type? you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. the output should be in arabic. make the output in json format. the keys are: category, subcategory, type, explanation. if none of the types fit the case at all, return "-" for the type."    )
+    system_instruction=(
+        "according to the categories mentinoed. which category does the provided text fit in the most? "
+        "what is the most appropriate subcategory? and what is the most appropriate type? "
+        "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
+        "the output should be in arabic. make the output in json format. "
+        "the keys are: category, subcategory, type, explanation. "
+        "if none of the types fit the case at all, return '-' for the type."
+    )
+    )
 
     # TODO Make these files available on the local file system
     # You may need to update the file paths
