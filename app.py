@@ -125,7 +125,7 @@ def initialize_gemini(key_id):
     # TODO Make these files available on the local file system
     # You may need to update the file paths
     files = [
-    upload_to_gemini("details.pdf", mime_type="application/pdf"),
+    upload_to_gemini("classes/details.txt", mime_type="text/plain"),
     ]
 
     # Some files have a processing delay. Wait for them to be ready.
@@ -270,7 +270,11 @@ def main():
             
             with st.spinner('جاري التحليل...'):
                 print("Sending message to Gemini...")
+                start_time = time.time()  # Start timing
                 response = st.session_state.chat_session.send_message(user_input)
+                end_time = time.time()  # End timing
+                duration = end_time - start_time
+                print(f"Gemini API response took {duration:.2f} seconds")
                 try:
                     data = json.loads(response.text)
                 except json.JSONDecodeError as e:
