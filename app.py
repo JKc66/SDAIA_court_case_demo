@@ -413,8 +413,6 @@ def main():
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df_download.to_excel(writer, index=False, sheet_name='Sheet1')
             
-            # Get workbook and worksheet
-            workbook = writer.book
             worksheet = writer.sheets['Sheet1']
             
             # Set RTL direction
