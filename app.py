@@ -229,8 +229,10 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             st.session_state.loading = True
-            st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
+            initialization = initialize_gemini(st.session_state.key_id)
+            st.session_state.chat_session = initialization
             st.session_state.loading = False
+            st.rerun()  # Refresh to show results
             
         if st.session_state.clear_input:
             st.session_state.clear_input = False
