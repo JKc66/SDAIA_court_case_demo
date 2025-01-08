@@ -4,12 +4,18 @@ import base64
 from pathlib import Path
 import time
 import os
+import json
+import time
 import google.generativeai as genai
 from random import randint
 import datetime
 import pandas as pd
-import io
-import openpyxl
+
+keys = ["AIzaSyDF9nYhWmigs4z-CI4FIfrMcc8oihKHTeU"
+,"AIzaSyBWJ65Dg1BYx2iiww76kj43iZPq0QggCdc" 
+,"AIzaSyBXjuFogtqMnXYMb1MlFSo_theuA53lKnU"
+,"AIzaSyDS3lkPdzV8UWAT_08yfAIrAK6_MTfPAs8"
+,"AIzaSyCJXSmeO6-4yxB__B45ZaClEGAME_hxewk"]
 
 NUM_KEYS = 5
 #------------------------------------------------------------------------------
@@ -106,7 +112,9 @@ def wait_for_files_active(files):
 
 @st.cache_resource(ttl=datetime.timedelta(days=2), show_spinner=False)
 def initialize_gemini(key_id):
-    genai.configure(api_key=os.environ[f"GEMINI_API_KEY_{key_id}"])
+    print('api key is ', key_id)
+    #genai.configure(api_key=os.environ[f"GEMINI_API_KEY_{key_id}"])
+    genai.configure(api_key = keys[key_id-1])
     # Create the model
     generation_config = {
     "temperature": 0,
@@ -119,7 +127,8 @@ def initialize_gemini(key_id):
     model = genai.GenerativeModel(
     model_name="gemini-2.0-flash-exp",
     generation_config=generation_config,
-system_instruction="according to the categories mentinoed. which category does the provided text fit in the most? what is the most appropriate subcategory? and what is the most appropriate type? you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. the output should be in arabic. make the output in json format. the keys are: category, subcategory, type, explanation. if none of the types fit the case at all, return "-" for the type."    )
+    system_instruction="according to the categories mentinoed. which category does the provided text fit in the most? what is the most appropriate subcategory? and what is the most appropriate type? you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. the output should be in arabic. make the output in json format. the keys are: category, subcategory, type, explanation. if none of the types fit the case at all, return "-" for the type.",
+    )
 
     # TODO Make these files available on the local file system
     # You may need to update the file paths
@@ -150,10 +159,6 @@ system_instruction="according to the categories mentinoed. which category does t
 #------------------------------------------------------------------------------
 def main():
     # Add new session state for delete operations
-    if "delete_triggered" not in st.session_state:
-        st.session_state.delete_triggered = False
-    if "clear_triggered" not in st.session_state:
-        st.session_state.clear_triggered = False
     if "delete_clicked" not in st.session_state:
         st.session_state.delete_clicked = False
     if "delete_index" not in st.session_state:
@@ -166,6 +171,8 @@ def main():
         st.session_state.history = load_history()
     if "case_submitted" not in st.session_state:
         st.session_state.case_submitted = False
+    if "clear_input" not in st.session_state:
+        st.session_state.clear_input = False
     if "loading" not in st.session_state:
         st.session_state.loading = False
     if "current_results" not in st.session_state:
@@ -215,7 +222,8 @@ def main():
                 height=300,
                 key="rtl_input",
                 placeholder="الرجاء إدخال النص هنا للتصنيف...",
-                disabled=st.session_state.case_submitted
+                disabled=st.session_state.case_submitted,
+                value="" if st.session_state.clear_input else None
             )
         else:
             st.markdown("""
@@ -227,22 +235,26 @@ def main():
             initialization = initialize_gemini(st.session_state.key_id)
             st.session_state.chat_session = initialization
             st.session_state.loading = False
-            st.rerun()
+            st.rerun()  # Refresh to show results
+            
+        if st.session_state.clear_input:
+            st.session_state.clear_input = False
 
         col1, col2 = st.columns(2)
         with col1:
             if st.button("⚖️ تصنيف الدعوى", type="primary", disabled=st.session_state.case_submitted):
-                if user_input and user_input.strip():
+                if user_input and user_input.strip():  # Check if input is not empty
                     st.session_state.loading = True
-                    st.session_state.current_results = None
+                    st.session_state.current_results = None  # Clear current results while loading
 
         with col2:
             def handle_new_case():
                 st.session_state.case_submitted = False
+                st.session_state.clear_input = True
                 st.session_state.current_results = None
                 st.session_state.loading = False
                 if "rtl_input" in st.session_state:
-                    st.session_state.rtl_input = ""  # Just clear the input value instead of deleting the key
+                    del st.session_state.rtl_input  # Clear the input state completely
 
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
@@ -252,28 +264,28 @@ def main():
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## ⚡ نتائج التصنيف")
         
+        # Show progress bar when loading
         if st.session_state.loading:
             st.markdown("""
-                <div class="custom-spinner-container">
-                    <div class="custom-spinner"></div>
-                    <div class="spinner-text">جاري تحليل وتصنيف الدعوى...</div>
+                <div class="loading-message">
+                    <h3>جاري تحليل وتصنيف الدعوى...</h3>
                 </div>
             """, unsafe_allow_html=True)
             
-            with st.spinner(''):
-                print("Sending message to Gemini...")
-                start_time = time.time()  # Start timing
-                response = st.session_state.chat_session.send_message(user_input)
-                end_time = time.time()  # End timing
-                duration = end_time - start_time
-                print(f"Gemini API response took {duration:.2f} seconds")
-                try:
-                    data = json.loads(response.text)
-                except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON: {e}")
-                    data = False
+            #progress_bar = st.progress(0)
+            print("Sending message to Gemini...")
+            response = st.session_state.chat_session.send_message(user_input)
+            print("Received a response...")
+            try:
+                data = json.loads(response.text)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON: {e}")
+                data = False
+            # for i in range(100):
+            #     time.sleep(0.01)
+            #     progress_bar.progress(i + 1)
             
-            # After progress 
+            # After progress completes
             if data == False:
                 m_calss_example = "-"
                 s_calss_example = "-"
@@ -296,11 +308,12 @@ def main():
             save_history(st.session_state.history)
             st.session_state.case_submitted = True
             st.session_state.loading = False
-            st.rerun()
+            st.rerun()  # Refresh to show results
 
         elif st.session_state.current_results:
             latest_entry = st.session_state.current_results
             
+            # Main Classification
             st.markdown(f"""
                 <div class="classification-item main-classification">
                     <div class="classification-label">
@@ -311,6 +324,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             
+            # Sub Classification
             st.markdown(f"""
                 <div class="classification-item sub-classification">
                     <div class="classification-label">
@@ -321,6 +335,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             
+            # Case Type
             st.markdown(f"""
                 <div class="classification-item case-type">
                     <div class="classification-label">
@@ -331,6 +346,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             
+            st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.markdown("""
                 <div class="results-card empty-results-card">
@@ -339,182 +355,91 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-    # History Section
-    st.markdown("""
-        <div class="history-title">
-            <h2>📜 سجل التصنيفات</h2>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Download functionality
-    if st.session_state.history:
-        # Convert history to DataFrame for display
-        df_display = pd.DataFrame(st.session_state.history)
-        df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input']]
-        df_display.columns = ['نوع الدعوى', 'التصنيف الفرعي', 'التصنيف الرئيسي', 'نص الدعوى']
-
-        # Create a different DataFrame for download with original order
-        df_download = pd.DataFrame(st.session_state.history)
-        df_download = df_download[['input', 'main_classification', 'sub_classification', 'case_type']]
-        df_download.columns = ['نص الدعوى', 'التصنيف الرئيسي', 'التصنيف الفرعي', 'نوع الدعوى']
-
-        # Create Excel file in memory
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df_download.to_excel(writer, index=False, sheet_name='Sheet1')
-            
-            # Get workbook and worksheet
-            workbook = writer.book
-            worksheet = writer.sheets['Sheet1']
-            
-            # Set RTL direction
-            worksheet.sheet_view.rightToLeft = True
-            
-            # Auto-fit columns
-            for column in worksheet.columns:
-                max_length = 0
-                column = [cell for cell in column]
-                for cell in column:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = (max_length + 2)
-                worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
-                
-            # Set font for better Arabic display
-            for row in worksheet.rows:
-                for cell in row:
-                    cell.font = openpyxl.styles.Font(name='Arial', size=11)
-                    cell.alignment = openpyxl.styles.Alignment(horizontal='right', vertical='center', wrap_text=True)
-
-        # Create download button with custom styling
-        excel_data = output.getvalue()
-        st.download_button(
-            label="⬇️ تحميل سجل التصنيفات",
-            data=excel_data,
-            file_name="history.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-
-        # Create tabs for different views
-        tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
-        
-        with tab1:
-            # Display history in detailed view
-            notification_icon = "✅"
-            
-            # Initialize visibility states for each history item
-            for i in range(len(st.session_state.history)):
-                if f"item_visible_{i}" not in st.session_state:
-                    st.session_state[f"item_visible_{i}"] = True
-            
+    # History section
+    with st.expander("📜 **سجل التصنيفات السابقة**"):
+        if not st.session_state.history:
+            st.info("لا يوجد سجل تصنيفات سابقة")
+        else:
             def handle_delete(index):
-                st.session_state[f"item_visible_{index}"] = False
+                st.session_state.delete_clicked = True
+                st.session_state.delete_index = index
                 st.session_state.history.pop(index)
                 save_history(st.session_state.history)
                 st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
 
             # Reverse the history list for display
-            visible_count = 0
             for i, entry in enumerate(reversed(st.session_state.history)):
                 real_index = len(st.session_state.history) - 1 - i
-                
-                if st.session_state.get(f"item_visible_{real_index}", True):
-                    if visible_count > 0:
-                        st.markdown("""
-                            <div class="custom-divider">
-                                <span>•••</span>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    visible_count += 1
 
-                    with st.container():
-                        st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
-                        col_content, col_delete = st.columns([0.95, 0.05])
+                # Show divider
+                if i > 0:
+                    st.markdown("""
+                        <div class="custom-divider">
+                            <span>•••</span>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                with st.container():
+                    col_content, col_delete = st.columns([0.95, 0.05])
+                    
+                    with col_content:
+                        st.markdown(f"""
+                        <div class="case-text">
+                            <strong>البحث:</strong> {entry["input"]}
+                        </div>
+                        """, 
+                        unsafe_allow_html=True)
+
+
                         
-                        with col_content:
-                            st.markdown(f"""
-                            <div class="case-text">
-                                <strong>البحث:</strong> {entry["input"]}
-                            </div>
-                            """, 
-                            unsafe_allow_html=True)
-                            
-                        with col_delete:
-                            st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
-                            if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
-                                pass
-                            st.markdown('</div>', unsafe_allow_html=True)
+                    with col_delete:
+                        st.markdown('<div class="delete-button-container">', unsafe_allow_html=True)
+                        if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
+                            pass
                         st.markdown('</div>', unsafe_allow_html=True)
 
-                        # Classifications
-                        st.markdown(f"""
-                            <div class="classification-item main-classification">
-                                <div class="classification-label">
-                                    <span class="classification-icon">📊</span>
-                                    التصنيف الرئيسي
-                                </div>
-                                <div class="classification-value">{entry["main_classification"]}</div>
+                    # Continue with the classifications...
+                    st.markdown(f"""
+                        <div class="classification-item main-classification">
+                            <div class="classification-label">
+                                <span class="classification-icon">📊</span>
+                                التصنيف الرئيسي
                             </div>
-                        """, unsafe_allow_html=True)
-                            
-                        st.markdown(f"""
-                            <div class="classification-item sub-classification">
-                                <div class="classification-label">
-                                    <span class="classification-icon">🔍</span>
-                                    التصنيف الفرعي
-                                </div>
-                                <div class="classification-value">{entry["sub_classification"]}</div>
+                            <div class="classification-value">{entry["main_classification"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                        
+                    # Sub Classification
+                    st.markdown(f"""
+                        <div class="classification-item sub-classification">
+                            <div class="classification-label">
+                                <span class="classification-icon">🔍</span>
+                                التصنيف الفرعي
                             </div>
-                        """, unsafe_allow_html=True)
-                            
-                        st.markdown(f"""
-                            <div class="classification-item case-type">
-                                <div class="classification-label">
-                                    <span class="classification-icon">⚖️</span>
-                                    نوع الدعوى
-                                </div>
-                                <div class="classification-value">{entry["case_type"]}</div>
+                            <div class="classification-value">{entry["sub_classification"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                        
+                    # Case Type
+                    st.markdown(f"""
+                        <div class="classification-item case-type">
+                            <div class="classification-label">
+                                <span class="classification-icon">⚖️</span>
+                                نوع الدعوى
                             </div>
-                        """, unsafe_allow_html=True)
+                            <div class="classification-value">{entry["case_type"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
             # Clear all history button
             def handle_clear_all():
-                if not st.session_state.get('clear_triggered'):
-                    st.session_state.history = []
-                    save_history([])
-                    st.toast("تم مسح السجل بالكامل", icon=notification_icon)
-                    st.session_state.clear_triggered = True
+                st.session_state.history = []
+                st.session_state.current_results = None
+                save_history([])
+                st.toast("تم مسح السجل بالكامل", icon=notification_icon)
 
-            st.markdown('<div class="clear-all-button-container">', unsafe_allow_html=True)
             if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
                 pass
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with tab2:
-            # Display history in table format using the display DataFrame
-            st.markdown("""
-                <style>
-                    .stDataFrame {
-                        font-family: 'Noto Kufi Arabic', sans-serif;
-                    }
-                    .stDataFrame td, .stDataFrame th {
-                        text-align: right !important;
-                        direction: rtl !important;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
-            st.dataframe(
-                df_display,
-                use_container_width=True,
-                hide_index=True
-            )
-
-    else:
-        st.markdown('<div class="info-message">لا يوجد سجل تصنيفات سابقة</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
