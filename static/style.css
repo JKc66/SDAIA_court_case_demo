@@ -707,3 +707,66 @@ header {
 .stTabs [data-baseweb="tab-panel"] {
     padding: 1rem 0;
 } 
+
+
+.info-link-container {
+    position: relative;
+    display: inline-block;
+}
+
+.info-link {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    color: #3498db; /* Modern blue color */
+    text-decoration: none;
+}
+
+.info-icon {
+    font-size: 1em;
+    margin-left: 5px;
+    border: 1px solid #3498db;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.info-bubble {
+    position: absolute;
+    top: 100%; /* Position below the link */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f0f0f0; /* Light background */
+    color: #333;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+    margin-top: 10px;
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+.info-bubble::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -8px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent #f0f0f0 transparent;
+}
+
+.info-link-container:hover .info-bubble {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s, 0s;
+}
