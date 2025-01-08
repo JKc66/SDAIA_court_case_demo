@@ -78,77 +78,102 @@ def upload_to_gemini(path, mime_type=None):
 
     See https://ai.google.dev/gemini-api/docs/prompting_with_media
     """
-    file = genai.upload_file(path, mime_type=mime_type)
-    print(f"Uploaded file '{file.display_name}' as: {file.uri}")
-    return file
+    try:
+        # Resolve the file path relative to the app directory
+        file_path = Path(__file__).parent / path
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+            
+        file = genai.upload_file(str(file_path), mime_type=mime_type)
+        print(f"Uploaded file '{file.display_name}' as: {file.uri}")
+        return file
+    except Exception as e:
+        st.error(f"Failed to upload file: {e}")
+        return None
 
 def wait_for_files_active(files):
-    """Waits for the given files to be active.
-
-    Some files uploaded to the Gemini API need to be processed before they can be
-    used as prompt inputs. The status can be seen by querying the file's "state"
-    field.
-
-    This implementation uses a simple blocking polling loop. Production code
-    should probably employ a more sophisticated approach.
-    """
+    """Waits for the given files to be active."""
     print("Waiting for file processing...")
-    for name in (file.name for file in files):
-        file = genai.get_file(name)
-        while file.state.name == "PROCESSING":
-            print(".", end="", flush=True)
-        time.sleep(10)
-        file = genai.get_file(name)
-        if file.state.name != "ACTIVE":
-            raise Exception(f"File {file.name} failed to process")
-    print("...all files ready")
-    print()
+    try:
+        for file in files:
+            if file is None:
+                raise Exception("Invalid file object")
+            
+            name = file.name
+            file = genai.get_file(name)
+            while file.state.name == "PROCESSING":
+                print(".", end="", flush=True)
+                time.sleep(10)
+                file = genai.get_file(name)
+            if file.state.name != "ACTIVE":
+                raise Exception(f"File {file.name} failed to process")
+        print("...all files ready")
+        print()
+    except Exception as e:
+        st.error(f"File processing failed: {e}")
+        return False
+    return True
 
 @st.cache_resource(ttl=datetime.timedelta(days=2), show_spinner=False)
 def initialize_gemini(key_id):
-    genai.configure(api_key=os.environ[f"GEMINI_API_KEY_{key_id}"])
-    # Create the model
-    generation_config = {
-    "temperature": 0,
-    "top_p": 0.95,
-    "top_k": 40,
-    "max_output_tokens": 8192,
-    "response_mime_type": "application/json",
-    }
+    try:
+        # Verify if the API key exists
+        api_key = os.environ.get(f"GEMINI_API_KEY_{key_id}")
+        if not api_key:
+            st.error(f"API key {key_id} not found. Please check your configuration.")
+            return None
+            
+        genai.configure(api_key=api_key)
+        
+        # Create the model
+        generation_config = {
+            "temperature": 0,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": 8192,
+            "response_mime_type": "application/json",
+        }
 
-    model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash-exp",
-    generation_config=generation_config,
-    system_instruction=(
-        "according to the categories mentinoed. which category does the provided text fit in the most? "
-        "what is the most appropriate subcategory? and what is the most appropriate type? "
-        "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
-        "the output should be in arabic. make the output in json format. "
-        "the keys are: category, subcategory, type, explanation. "
-        "if none of the types fit the case at all, return '-' for the type."
-    )
-    )
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash-exp",
+            generation_config=generation_config,
+            system_instruction=(
+                "according to the categories mentinoed. which category does the provided text fit in the most? "
+                "what is the most appropriate subcategory? and what is the most appropriate type? "
+                "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
+                "the output should be in arabic. make the output in json format. "
+                "the keys are: category, subcategory, type, explanation. "
+                "if none of the types fit the case at all, return '-' for the type."
+            )
+        )
 
-    # TODO Make these files available on the local file system
-    # You may need to update the file paths
-    files = [
-    upload_to_gemini("classes/details.txt", mime_type="text/plain"),
-    ]
+        # Upload and process the categories file
+        files = [
+            upload_to_gemini("classes/details.txt", mime_type="text/plain"),
+        ]
 
-    # Some files have a processing delay. Wait for them to be ready.
-    wait_for_files_active(files)
+        # Check if file upload was successful
+        if None in files:
+            raise Exception("Failed to upload required files")
 
-    chat_session = model.start_chat(
-    history=[
-        {
-        "role": "user",
-        "parts": [
-            files[0],
-        ],
-        },
-    ]
-    )
-    return chat_session
+        # Wait for files to be processed
+        if not wait_for_files_active(files):
+            raise Exception("File processing failed")
+
+        chat_session = model.start_chat(
+            history=[
+                {
+                    "role": "user",
+                    "parts": [
+                        files[0],
+                    ],
+                },
+            ]
+        )
+        return chat_session
+    except Exception as e:
+        st.error(f"Failed to initialize Gemini: {e}")
+        return None
 
 #response = chat_session.send_message("INSERT_INPUT_HERE")
     
@@ -232,7 +257,24 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
             st.session_state.loading = True
+            
+            # Try to initialize with current key
             initialization = initialize_gemini(st.session_state.key_id)
+            
+            # If initialization fails, try other keys
+            if initialization is None:
+                for i in range(1, NUM_KEYS + 1):
+                    if i != st.session_state.key_id:
+                        st.session_state.key_id = i
+                        initialization = initialize_gemini(i)
+                        if initialization is not None:
+                            break
+                
+                if initialization is None:
+                    st.error("Failed to initialize the system. Please contact support.")
+                    st.session_state.loading = False
+                    return
+            
             st.session_state.chat_session = initialization
             st.session_state.loading = False
             st.rerun()
