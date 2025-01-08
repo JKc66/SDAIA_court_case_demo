@@ -109,7 +109,7 @@ def wait_for_files_active(files):
     print("...all files ready")
     print()
 
-@st.cache_data(ttl=datetime.timedelta(days=2))
+@st.cache_resource(ttl=datetime.timedelta(days=2), show_spinner=False)
 def initialize_gemini(key_id):
     genai.configure(api_key=os.environ[f"GEMINI_API_KEY_{key_id}"])
     # Create the model
