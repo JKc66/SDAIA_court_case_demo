@@ -399,13 +399,30 @@ def main():
 
         # Create download button with custom styling
         excel_data = output.getvalue()
-        st.download_button(
-            label="⬇️ تحميل سجل التصنيفات",
-            data=excel_data,
-            file_name="history.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+
+        # Create columns for download buttons
+        col1, col2 = st.columns(2)
+        
+        # Excel download in first column
+        with col1:
+            st.download_button(
+                label="⬇️ تحميل سجل التصنيفات (Excel)",
+                data=excel_data,
+                file_name="history.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        
+        # JSON download in second column
+        with col2:
+            json_str = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
+            st.download_button(
+                label="⬇️ تحميل سجل التصنيفات (JSON)",
+                data=json_str,
+                file_name="history.json",
+                mime="application/json",
+                use_container_width=True
+            )
 
         # Create tabs for different views
         tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
