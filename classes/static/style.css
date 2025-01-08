@@ -1,0 +1,505 @@
+/* Global Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri&family=Scheherazade+New:wght@700&display=swap');
+
+/* Global RTL settings */
+body {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+}
+
+/* Layout & Spacing */
+.block-container {
+    padding-top: 2rem;
+    margin-top: 0;
+}
+
+.main .block-container {
+    padding: 1rem 4rem;
+    margin-top: 0;
+}
+
+header {
+    padding: 1rem !important;
+    margin: 0 !important;
+}
+
+/* Header Layout */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    margin: 0;
+    width: 100%;
+}
+
+/* Logo Styling */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+}
+
+.logo-container.left-logos,
+.logo-container.right-logos {
+    flex: 0 0 450px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo-container img {
+    height: auto;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo-container.left-logos img:nth-child(1) { width: 260px; } /* Najiz logo */
+.logo-container.left-logos img:nth-child(2) { width: 230px; } /* SDAIA logo */
+.logo-container.right-logos img:nth-child(1) { width: 200px; } /* Justice logo */
+.logo-container.right-logos img:nth-child(2) { width: 250px; } /* Gov logo */
+
+/* Title Styling */
+.app-title {
+    flex: 1;
+    text-align: center;
+}
+
+.app-title h1 {
+    font-family: 'Scheherazade New', serif;
+    font-size: 5em;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(120deg, #1C355E 0%, #EA6852 50%, #FFB548 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+.app-title p {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 1.2em;
+    color: #101820;
+    margin: 5px 0 0;
+}
+
+/* Title Animation */
+@keyframes circleScatter {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        filter: blur(0);
+    }
+    50% {
+        transform: scale(1.2) rotate(5deg);
+        opacity: 0.7;
+        filter: blur(2px);
+        letter-spacing: 0.2em;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        filter: blur(0);
+        letter-spacing: 0;
+    }
+}
+
+.app-title h1:hover {
+    animation: circleScatter 0.7s ease-in-out;
+}
+
+/* Main Content Section */
+.main-container {
+    padding: 5px 10px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Input/Results Area */
+.content-section {
+    margin-top: 1rem;
+}
+
+.stTextArea {
+    margin-top: -1rem;
+}
+
+.stTextArea textarea {
+    direction: rtl;
+    text-align: right;
+    margin-bottom: 0;
+    font-family: 'Amiri', serif !important;
+    font-size: 1.2em !important;
+    line-height: 1.6 !important;
+    padding: 1rem !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stTextArea textarea::placeholder {
+    font-family: 'Amiri', serif !important;
+    font-size: 1.2em !important;
+    color: #6b7280 !important;
+}
+
+.stTextArea textarea:focus {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.15);
+}
+
+/* Classification Results */
+.results-section {
+    margin-top: 0.5rem;
+    background-color: #f8fafc;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Classification Items */
+.classification-item {
+    padding: 1rem;
+    border-radius: 12px;
+    margin: 0.75rem 0;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.classification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Main Classification */
+.main-classification {
+    background: linear-gradient(135deg, #FFB548 0%, #EA6852 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 181, 72, 0.2);
+}
+
+.main-classification .classification-label,
+.main-classification .classification-value {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.main-classification .classification-icon {
+    background: linear-gradient(135deg, #FFE4B5 0%, #FFDAB9 100%);
+}
+
+/* Sub Classification */
+.sub-classification {
+    background: linear-gradient(135deg, #625D9C 0%, #1C355E 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(98, 93, 156, 0.2);
+}
+
+.sub-classification .classification-label,
+.sub-classification .classification-value {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.sub-classification .classification-icon {
+    background: linear-gradient(135deg, #8E89D4 0%, #7A76B7 100%);
+}
+
+/* Case Type */
+.case-type {
+    background: linear-gradient(135deg, #6ABF4B 0%, #00AE8D 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(106, 191, 75, 0.2);
+}
+
+.case-type .classification-label,
+.case-type .classification-value {
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.case-type .classification-icon {
+    background: linear-gradient(135deg, #98E87A 0%, #7ACC5E 100%);
+}
+
+/* Classification Labels - General */
+.classification-label {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.classification-value {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 1.1em;
+}
+
+.classification-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    margin-left: 0.5rem;
+}
+
+/* Case Text */
+.case-text {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    font-family: 'Amiri', serif;
+    color: #444;
+    font-size: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.case-text:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.15);
+}
+
+.case-text strong {
+    color: #333;
+    font-size: 20px;
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(135deg, #1C355E 0%, #625D9C 100%);
+    color: white;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-weight: 600;
+    padding: 0.5rem 2rem;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.3s ease;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.2);
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #625D9C 0%, #1C355E 100%);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.3);
+}
+
+.stButton > button[kind="secondary"] {
+    background: linear-gradient(135deg, #00C1DE 0%, #00AE8D 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 193, 222, 0.2);
+}
+
+.stButton > button[kind="secondary"]:hover {
+    background: linear-gradient(135deg, #00AE8D 0%, #00C1DE 100%);
+    box-shadow: 0 8px 25px rgba(0, 193, 222, 0.3);
+}
+
+/* Delete Button */
+.delete-button-container {
+    display: flex;
+    align-items: start;
+    padding-top: 10px;
+}
+
+.delete-button-container .stButton button {
+    padding: 0 10px;
+    height: 40px;
+    line-height: 40px;
+    background: linear-gradient(135deg, #EA6852 0%, #FFB548 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    box-shadow: none;
+}
+
+.delete-button-container .stButton button:hover {
+    background: linear-gradient(135deg, #FFB548 0%, #EA6852 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Loading States */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(28, 53, 94, 0.05) 0%, rgba(0, 174, 141, 0.05) 100%);
+    border-radius: 15px;
+}
+
+.loading-message h3 {
+    color: #1C355E;
+    font-family: "Noto Kufi Arabic", sans-serif;
+    margin-bottom: 1rem;
+    background: linear-gradient(120deg, #1C355E 0%, #00AE8D 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Progress Bar */
+.stProgress .st-bo {
+    background: linear-gradient(90deg, #00AE8D 0%, #00C1DE 100%);
+}
+
+.stProgress .st-bp {
+    background: linear-gradient(90deg, rgba(0, 174, 141, 0.1) 0%, rgba(0, 193, 222, 0.1) 100%);
+}
+
+/* Empty States */
+.empty-results-card {
+    text-align: center;
+    padding: 3rem;
+    background: linear-gradient(135deg, rgba(28, 53, 94, 0.05) 0%, rgba(98, 93, 156, 0.05) 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
+}
+
+.empty-results-card img {
+    width: 64px;
+    margin-bottom: 1rem;
+}
+
+.empty-results-card h3 {
+    color: #101820;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+}
+
+/* Dividers */
+.custom-divider {
+    position: relative;
+    text-align: center;
+    padding: 1.5rem 0;
+    margin: 2rem 0;
+    overflow: hidden;
+}
+
+.custom-divider::before,
+.custom-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        rgba(28, 53, 94, 0.05) 0%,
+        rgba(28, 53, 94, 0.2) 50%,
+        rgba(98, 93, 156, 0.2) 100%
+    );
+    transform: translateY(-50%);
+}
+
+.custom-divider::before {
+    right: 52%;
+}
+
+.custom-divider::after {
+    left: 52%;
+}
+
+.custom-divider span {
+    position: relative;
+    background: linear-gradient(120deg, #1C355E 0%, #625D9C 50%, #EA6852 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 1.1em;
+    padding: 0 15px;
+    transition: all 0.3s ease;
+}
+
+.custom-divider:hover span {
+    transform: scale(1.05);
+    background: linear-gradient(120deg, #EA6852 0%, #625D9C 50%, #1C355E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.custom-divider:hover::before,
+.custom-divider:hover::after {
+    background: linear-gradient(90deg, 
+        rgba(234, 104, 82, 0.1) 0%,
+        rgba(98, 93, 156, 0.3) 50%,
+        rgba(28, 53, 94, 0.3) 100%
+    );
+}
+
+/* History Section */
+.history-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(28, 53, 94, 0.02) 0%, rgba(98, 93, 156, 0.02) 100%);
+    border-radius: 15px;
+}
+
+.history-section h2 {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    color: #1C355E;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.history-item {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(28, 53, 94, 0.15);
+}
+
+.history-download-button {
+    display: none;
+}
+
+/* Clear All Button */
+.clear-all-button-container {
+    margin-top: 2rem;
+    padding: 0 2rem;
+}
+
+.clear-all-button-container button {
+    width: 100%;
+    background: linear-gradient(135deg, #EA6852 0%, #FFB548 100%) !important;
+    color: white !important;
+    font-size: 1.1em !important;
+    padding: 1rem !important;
+    border-radius: 12px !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(234, 104, 82, 0.2) !important;
+    transition: all 0.3s ease !important;
+    font-family: 'Noto Kufi Arabic', sans-serif !important;
+}
+
+.clear-all-button-container button:hover {
+    background: linear-gradient(135deg, #FFB548 0%, #EA6852 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(234, 104, 82, 0.3) !important;
+} 
