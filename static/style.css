@@ -502,4 +502,122 @@ header {
     background: linear-gradient(135deg, #FFB548 0%, #EA6852 100%) !important;
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(234, 104, 82, 0.3) !important;
+}
+
+/* Additional Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.mt-30 {
+    margin-top: 30px;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+/* History Title Section */
+.history-title {
+    text-align: center;
+    margin: 30px 0;
+}
+
+.history-title h2 {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    color: #1C355E;
+}
+
+/* Download Section */
+.download-section {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* Info Message */
+.info-message {
+    padding: 1rem;
+    background-color: #f0f7ff;
+    border-radius: 8px;
+    color: #1C355E;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* Delete Button Container */
+.delete-button-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding-top: 10px;
+}
+
+/* Container Layouts */
+.flex-container {
+    display: flex;
+    align-items: center;
+}
+
+.flex-95-5 {
+    display: flex;
+    gap: 10px;
+}
+
+.flex-95-5 > div:first-child {
+    flex: 0.95;
+}
+
+.flex-95-5 > div:last-child {
+    flex: 0.05;
+}
+
+/* Loading States */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Enhanced Spinner Styles */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.custom-spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    background: linear-gradient(135deg, rgba(28, 53, 94, 0.05) 0%, rgba(0, 174, 141, 0.05) 100%);
+    border-radius: 15px;
+    margin: 2rem 0;
+}
+
+.custom-spinner {
+    width: 80px;
+    height: 80px;
+    border: 8px solid rgba(28, 53, 94, 0.1);
+    border-top: 8px solid;
+    border-image: linear-gradient(120deg, #1C355E, #00AE8D) 1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1.5rem;
+}
+
+.spinner-text {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-top: 1rem;
+    background: linear-gradient(120deg, #1C355E 0%, #00AE8D 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pulse 1.5s ease-in-out infinite;
 } 
