@@ -149,7 +149,6 @@ def initialize_gemini(key_id):
     return chat_session
 
 #response = chat_session.send_message("INSERT_INPUT_HERE")
-    
 
 #------------------------------------------------------------------------------
 # MAIN APPLICATION
@@ -162,7 +161,7 @@ def main():
         st.session_state.delete_index = None
     if "key_id" not in st.session_state:
         st.session_state.key_id = randint(1, NUM_KEYS)
-        
+
     # Initialize session state
     if "history" not in st.session_state:
         st.session_state.history = load_history()
@@ -212,46 +211,57 @@ def main():
     with col_input:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## 📝 نص الدعوى ")
-        
+
         if "chat_session" not in st.session_state:
+            with col_results:
+                st.markdown('<div class="content-section">', unsafe_allow_html=True)
+                st.markdown("""
+                    <div class="loading-message">
+                        <h3>يتم تهيئة النظام...</h3>
+                    </div>
+                """, unsafe_allow_html=True)
+            st.session_state.loading = True
             st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
+            st.session_state.loading = False
+            st.rerun() # Refresh to remove the loading message after initialization
 
-        user_input = st.text_area(
-            label=" ",
-            height=300,
-            key="rtl_input",
-            placeholder="الرجاء إدخال النص هنا للتصنيف...",
-            disabled=st.session_state.case_submitted,
-            value="" if st.session_state.clear_input else None
-        )
-        
-        if st.session_state.clear_input:
-            st.session_state.clear_input = False
+        if "chat_session" in st.session_state:
+            user_input = st.text_area(
+                label=" ",
+                height=300,
+                key="rtl_input",
+                placeholder="الرجاء إدخال النص هنا للتصنيف...",
+                disabled=st.session_state.case_submitted,
+                value="" if st.session_state.clear_input else None
+            )
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("⚖️ تصنيف الدعوى", type="primary", disabled=st.session_state.case_submitted):
-                if user_input and user_input.strip():  # Check if input is not empty
-                    st.session_state.loading = True
-                    st.session_state.current_results = None  # Clear current results while loading
+            if st.session_state.clear_input:
+                st.session_state.clear_input = False
 
-        with col2:
-            def handle_new_case():
-                st.session_state.case_submitted = False
-                st.session_state.clear_input = True
-                st.session_state.current_results = None
-                st.session_state.loading = False
-                if "rtl_input" in st.session_state:
-                    del st.session_state.rtl_input  # Clear the input state completely
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⚖️ تصنيف الدعوى", type="primary", disabled=st.session_state.case_submitted):
+                    if user_input and user_input.strip():  # Check if input is not empty
+                        st.session_state.loading = True
+                        st.session_state.current_results = None  # Clear current results while loading
 
-            if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
-                pass
+            with col2:
+                def handle_new_case():
+                    st.session_state.case_submitted = False
+                    st.session_state.clear_input = True
+                    st.session_state.current_results = None
+                    st.session_state.loading = False
+                    if "rtl_input" in st.session_state:
+                        del st.session_state.rtl_input  # Clear the input state completely
+
+                if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
+                    pass
 
     # Results section
     with col_results:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## ⚡ نتائج التصنيف")
-        
+
         # Show progress bar when loading
         if st.session_state.loading:
             st.markdown("""
@@ -259,49 +269,48 @@ def main():
                     <h3>جاري تحليل وتصنيف الدعوى...</h3>
                 </div>
             """, unsafe_allow_html=True)
-            
-            #progress_bar = st.progress(0)
-            print("Sending message to Gemini...")
-            response = st.session_state.chat_session.send_message(user_input)
-            try:
-                data = json.loads(response.text)
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
-                data = False
 
+            if "chat_session" in st.session_state:
+                print("Sending message to Gemini...")
+                response = st.session_state.chat_session.send_message(user_input)
+                try:
+                    data = json.loads(response.text)
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON: {e}")
+                    data = False
 
-            # for i in range(100):
-            #     time.sleep(0.01)
-            #     progress_bar.progress(i + 1)
-            
-            # After progress completes
-            if data == False:
-                m_calss_example = "-"
-                s_calss_example = "-"
-                case_type_example = "-"
-            else:
-                m_calss_example = data['category']
-                s_calss_example = data['subcategory']
-                case_type_example = data['type']
+                # for i in range(100):
+                #     time.sleep(0.01)
+                #     progress_bar.progress(i + 1)
 
-            new_entry = {
-                "input": user_input,
-                "main_classification": m_calss_example,
-                "sub_classification": s_calss_example,
-                "case_type": case_type_example,
-                "id": len(st.session_state.history)
-            }
-            
-            st.session_state.current_results = new_entry
-            st.session_state.history.append(new_entry)
-            save_history(st.session_state.history)
-            st.session_state.case_submitted = True
-            st.session_state.loading = False
-            st.rerun()  # Refresh to show results
+                # After progress completes
+                if data == False:
+                    m_calss_example = "-"
+                    s_calss_example = "-"
+                    case_type_example = "-"
+                else:
+                    m_calss_example = data['category']
+                    s_calss_example = data['subcategory']
+                    case_type_example = data['type']
+
+                new_entry = {
+                    "input": user_input,
+                    "main_classification": m_calss_example,
+                    "sub_classification": s_calss_example,
+                    "case_type": case_type_example,
+                    "id": len(st.session_state.history)
+                }
+
+                st.session_state.current_results = new_entry
+                st.session_state.history.append(new_entry)
+                save_history(st.session_state.history)
+                st.session_state.case_submitted = True
+                st.session_state.loading = False
+                st.rerun()  # Refresh to show results
 
         elif st.session_state.current_results:
             latest_entry = st.session_state.current_results
-            
+
             # Main Classification
             st.markdown(f"""
                 <div class="classification-item main-classification">
@@ -312,7 +321,7 @@ def main():
                     <div class="classification-value">{latest_entry["main_classification"]}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             # Sub Classification
             st.markdown(f"""
                 <div class="classification-item sub-classification">
@@ -323,7 +332,7 @@ def main():
                     <div class="classification-value">{latest_entry["sub_classification"]}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             # Case Type
             st.markdown(f"""
                 <div class="classification-item case-type">
@@ -334,7 +343,7 @@ def main():
                     <div class="classification-value">{latest_entry["case_type"]}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
+
             st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.markdown("""
@@ -370,17 +379,17 @@ def main():
 
                 with st.container():
                     col_content, col_delete = st.columns([0.95, 0.05])
-                    
+
                     with col_content:
                         st.markdown(f"""
                         <div class="case-text">
                             <strong>البحث:</strong> {entry["input"]}
                         </div>
-                        """, 
+                        """,
                         unsafe_allow_html=True)
 
 
-                        
+
                     with col_delete:
                         st.markdown('<div class="delete-button-container">', unsafe_allow_html=True)
                         if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
@@ -397,7 +406,7 @@ def main():
                             <div class="classification-value">{entry["main_classification"]}</div>
                         </div>
                     """, unsafe_allow_html=True)
-                        
+
                     # Sub Classification
                     st.markdown(f"""
                         <div class="classification-item sub-classification">
@@ -408,7 +417,7 @@ def main():
                             <div class="classification-value">{entry["sub_classification"]}</div>
                         </div>
                     """, unsafe_allow_html=True)
-                        
+
                     # Case Type
                     st.markdown(f"""
                         <div class="classification-item case-type">
