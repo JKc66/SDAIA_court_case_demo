@@ -7,7 +7,9 @@ import os
 import json
 import time
 import google.generativeai as genai
+from random import randint
 
+NUM_KEYS = 5
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
 #------------------------------------------------------------------------------
@@ -74,77 +76,76 @@ def get_base64_logo(filename):
 #------------------------------------------------------------------------------
 # Gemini Communication
 #------------------------------------------------------------------------------
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    st.error("Please set the GEMINI_API_KEY in your Streamlit secrets.")
-    st.stop()
-genai.configure(api_key=GEMINI_API_KEY)
 
 def upload_to_gemini(path, mime_type=None):
-  """Uploads the given file to Gemini.
+    """Uploads the given file to Gemini.
 
-  See https://ai.google.dev/gemini-api/docs/prompting_with_media
-  """
-  file = genai.upload_file(path, mime_type=mime_type)
-  print(f"Uploaded file '{file.display_name}' as: {file.uri}")
-  return file
+    See https://ai.google.dev/gemini-api/docs/prompting_with_media
+    """
+    file = genai.upload_file(path, mime_type=mime_type)
+    print(f"Uploaded file '{file.display_name}' as: {file.uri}")
+    return file
 
 def wait_for_files_active(files):
-  """Waits for the given files to be active.
+    """Waits for the given files to be active.
 
-  Some files uploaded to the Gemini API need to be processed before they can be
-  used as prompt inputs. The status can be seen by querying the file's "state"
-  field.
+    Some files uploaded to the Gemini API need to be processed before they can be
+    used as prompt inputs. The status can be seen by querying the file's "state"
+    field.
 
-  This implementation uses a simple blocking polling loop. Production code
-  should probably employ a more sophisticated approach.
-  """
-  print("Waiting for file processing...")
-  for name in (file.name for file in files):
-    file = genai.get_file(name)
-    while file.state.name == "PROCESSING":
-      print(".", end="", flush=True)
-      time.sleep(10)
-      file = genai.get_file(name)
-    if file.state.name != "ACTIVE":
-      raise Exception(f"File {file.name} failed to process")
-  print("...all files ready")
-  print()
+    This implementation uses a simple blocking polling loop. Production code
+    should probably employ a more sophisticated approach.
+    """
+    print("Waiting for file processing...")
+    for name in (file.name for file in files):
+        file = genai.get_file(name)
+        while file.state.name == "PROCESSING":
+            print(".", end="", flush=True)
+        time.sleep(10)
+        file = genai.get_file(name)
+        if file.state.name != "ACTIVE":
+            raise Exception(f"File {file.name} failed to process")
+    print("...all files ready")
+    print()
 
-# Create the model
-generation_config = {
-  "temperature": 0,
-  "top_p": 0.95,
-  "top_k": 40,
-  "max_output_tokens": 8192,
-  "response_mime_type": "application/json",
-}
+@st.cache_data
+def initialize_gemini(key_id):
+    genai.configure(api_key=os.environ[f"GEMINI_API_KEY_{key_id}"])
+    # Create the model
+    generation_config = {
+    "temperature": 0,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_output_tokens": 8192,
+    "response_mime_type": "application/json",
+    }
 
-model = genai.GenerativeModel(
-  model_name="gemini-2.0-flash-exp",
-  generation_config=generation_config,
-  system_instruction="according to the categories mentinoed. which category does the provided text fit in the most. what is the most appropriate subcategory? and what is the most appropriate type? the output should be in arabic. make the output in json format. the keys are: category, subcategory, type, explanation.",
-)
+    model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash-exp",
+    generation_config=generation_config,
+    system_instruction="according to the categories mentinoed. which category does the provided text fit in the most. what is the most appropriate subcategory? and what is the most appropriate type? the output should be in arabic. make the output in json format. the keys are: category, subcategory, type, explanation.",
+    )
 
-# TODO Make these files available on the local file system
-# You may need to update the file paths
-files = [
-  upload_to_gemini("details.pdf", mime_type="application/pdf"),
-]
+    # TODO Make these files available on the local file system
+    # You may need to update the file paths
+    files = [
+    upload_to_gemini("details.pdf", mime_type="application/pdf"),
+    ]
 
-# Some files have a processing delay. Wait for them to be ready.
-wait_for_files_active(files)
+    # Some files have a processing delay. Wait for them to be ready.
+    wait_for_files_active(files)
 
-chat_session = model.start_chat(
-  history=[
-    {
-      "role": "user",
-      "parts": [
-        files[0],
-      ],
-    },
-  ]
-)
+    chat_session = model.start_chat(
+    history=[
+        {
+        "role": "user",
+        "parts": [
+            files[0],
+        ],
+        },
+    ]
+    )
+    return chat_session
 
 #response = chat_session.send_message("INSERT_INPUT_HERE")
     
@@ -158,6 +159,10 @@ def main():
         st.session_state.delete_clicked = False
     if "delete_index" not in st.session_state:
         st.session_state.delete_index = None
+    if "key_id" not in st.session_state:
+        st.session_state.key_id = randint(1, NUM_KEYS)
+    if "chat_session" not in st.session_state:
+        st.session_state.chat_session = initialize_gemini(st.session_state.key_id)
         
     # Initialize session state
     if "history" not in st.session_state:
@@ -255,7 +260,7 @@ def main():
             
             progress_bar = st.progress(0)
             print("Sending message to Gemini...")
-            response = chat_session.send_message(user_input)
+            response = st.session_state.chat_session.send_message(user_input)
             try:
                 data = json.loads(response.text)
             except json.JSONDecodeError as e:
