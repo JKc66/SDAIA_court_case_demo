@@ -1,61 +1,51 @@
-import google.generativeai as genai
-import toml
-import time
-from pathlib import Path
-
-def test_api_key(key: str, key_number: int) -> tuple[bool, float, str]:
-    """Test a single Gemini API key and return success status, response time, and any error message."""
-    start_time = time.time()
-    try:
-        # Configure the model
-        genai.configure(api_key=key)
-        model = genai.GenerativeModel('gemini-1.5-flash-8b')
-        
-        # Try a simple generation
-        response = model.generate_content("Hello")
-        
-        duration = time.time() - start_time
-        return True, duration, ""
-    except Exception as e:
-        duration = time.time() - start_time
-        return False, duration, str(e)
-
-def main():
-    # Read the secrets file
-    secrets_path = Path('.streamlit/secrets.toml')
-    if not secrets_path.exists():
-        print("Error: secrets.toml file not found!")
-        return
-
-    secrets = toml.load(secrets_path)
+def transform_headings(input_file, output_file):
+    with open(input_file, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
     
-    # Test each API key
-    print("\nTesting Gemini API Keys...")
-    print("-" * 50)
+    transformed_lines = []
+    current_section = None
     
-    all_valid = True
-    for i in range(1, 6):
-        key_name = f"GEMINI_API_KEY_{i}"
-        key = secrets.get(key_name)
-        
-        if not key:
-            print(f"{key_name}: NOT FOUND in secrets.toml")
-            all_valid = False
+    for line in lines:
+        line = line.strip()
+        if not line:
+            transformed_lines.append(line)
             continue
-            
-        print(f"\nTesting {key_name}...")
-        success, duration, error = test_api_key(key, i)
         
-        if success:
-            print(f"✅ Valid! (Response time: {duration:.2f}s)")
+        # Main categories (e.g., "1. أحوال شخصية")
+        if line[0].isdigit() and '. ' in line[:4] and not current_section == "sub_category":
+            heading = line[line.find('.')+2:]
+            transformed_lines.append(f'# {heading}')
+            current_section = "main"
+            
+        # Sub-categories with letters or words like "التصنيف العام"
+        elif (line.startswith('##') or 
+              any(line.startswith(f"{letter}. ") for letter in 'أبجدهوزحطيكلمنسعفصقرشتثخذضظغ') or
+              line.startswith('دعاوى') or
+              line.startswith('التصنيف')):
+            if line.startswith('##'):
+                heading = line[2:].strip()
+            else:
+                heading = line[line.find('.')+2:] if '. ' in line else line
+            transformed_lines.append(f'## {heading}')
+            current_section = "sub_category"
+            
+        # Types under sub-categories (numbered items under sub-categories)
+        elif (line[0].isdigit() and '. ' in line[:4] and current_section == "sub_category") or line.startswith('#'):
+            if line.startswith('#'):
+                heading = line[1:].strip()
+            else:
+                heading = line[line.find('.')+2:]
+            transformed_lines.append(f'### {heading}')
+            
+        # Keep other lines unchanged (descriptions, notes, etc.)
         else:
-            print(f"❌ Invalid! (Time: {duration:.2f}s)")
-            print(f"Error: {error}")
-            all_valid = False
+            transformed_lines.append(line)
     
-    print("\n" + "-" * 50)
-    print("Summary:")
-    print("All keys valid!" if all_valid else "Some keys are invalid!")
+    # Write the transformed content
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(transformed_lines))
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    input_file = 'testin/details_for_test.txt'
+    output_file = 'testin/details_transformed.txt'
+    transform_headings(input_file, output_file)
