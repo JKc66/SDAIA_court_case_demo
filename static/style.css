@@ -789,3 +789,18 @@ header {
     visibility: visible;
     transform: translateY(0);
 }
+
+/* Hide GitHub Icons */
+.st-emotion-cache-h5rgaw.ea3mdgi1 {
+    display: none !important;
+}
+
+/* Hide GitHub Icon in Footer */
+footer {
+    display: none !important;
+}
+
+/* Hide the Made with Streamlit Footer */
+.st-emotion-cache-cio0dv.ea3mdgi1 {
+    display: none !important;
+}
