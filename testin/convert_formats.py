@@ -62,9 +62,9 @@ def parse_text_file(file_path: str) -> Dict[str, Any]:
                     data[current_main]['description'] = description
                 current_section = None
                 
-            # Tips (التلميحات:)
+            # hints (التلميحات:)
             elif line.startswith('التلميحات:'):
-                current_section = 'tips'
+                current_section = 'hints'
                 continue
             
             # Exceptions (الاستثناءات:)
@@ -74,19 +74,19 @@ def parse_text_file(file_path: str) -> Dict[str, Any]:
             
             # Handle content lines
             elif not line.startswith('#') and not line.startswith('الوصف:'):
-                if current_section == 'tips':
+                if current_section == 'hints':
                     if current_type:
-                        if 'tips' not in data[current_main]['subcategories'][current_sub]['types'][current_type]:
-                            data[current_main]['subcategories'][current_sub]['types'][current_type]['tips'] = []
-                        data[current_main]['subcategories'][current_sub]['types'][current_type]['tips'].append(line)
+                        if 'hints' not in data[current_main]['subcategories'][current_sub]['types'][current_type]:
+                            data[current_main]['subcategories'][current_sub]['types'][current_type]['hints'] = []
+                        data[current_main]['subcategories'][current_sub]['types'][current_type]['hints'].append(line)
                     elif current_sub:
-                        if 'tips' not in data[current_main]['subcategories'][current_sub]:
-                            data[current_main]['subcategories'][current_sub]['tips'] = []
-                        data[current_main]['subcategories'][current_sub]['tips'].append(line)
+                        if 'hints' not in data[current_main]['subcategories'][current_sub]:
+                            data[current_main]['subcategories'][current_sub]['hints'] = []
+                        data[current_main]['subcategories'][current_sub]['hints'].append(line)
                     elif current_main:
-                        if 'tips' not in data[current_main]:
-                            data[current_main]['tips'] = []
-                        data[current_main]['tips'].append(line)
+                        if 'hints' not in data[current_main]:
+                            data[current_main]['hints'] = []
+                        data[current_main]['hints'].append(line)
                 elif current_section == 'exceptions':
                     if current_type:
                         if 'exceptions' not in data[current_main]['subcategories'][current_sub]['types'][current_type]:

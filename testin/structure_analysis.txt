@@ -1,0 +1,228 @@
+
+YAML File Analysis:
+==================================================
+Main categories: 7
+Subcategories: 42
+Types: 246
+
+Detailed Structure Analysis:
+==================================================
+
+Main Category: أحوال شخصية
+├── Number of subcategories: 6
+│   ├── Subcategory: التصنيف العام
+│   │   └── Number of types: 8
+│   ├── Subcategory: دعاوى الأوقاف والوصايا
+│   │   └── Number of types: 5
+│   ├── Subcategory: دعاوى الحضانة والزيارة والنفقة
+│   │   └── Number of types: 8
+│   ├── Subcategory: دعاوى الزواج والفرقة
+│   │   └── Number of types: 6
+│   ├── Subcategory: دعاوى الولاية
+│   │   └── Number of types: 5
+│   ├── Subcategory: دعاوى قسمة التركات
+│   │   └── Number of types: 4
+
+Main Category: تجاري
+├── Number of subcategories: 7
+│   ├── Subcategory: الاستئناف
+│   │   └── Number of types: 1
+│   ├── Subcategory: الأنظمة التجارية
+│   │   └── Number of types: 12
+│   ├── Subcategory: الشركات
+│   │   └── Number of types: 3
+│   ├── Subcategory: الطلبات القضائية
+│   │   └── Number of types: 6
+│   ├── Subcategory: العقود التجارية
+│   │   └── Number of types: 9
+│   ├── Subcategory: الملكية الفكرية
+│   │   └── Number of types: 3
+│   ├── Subcategory: الدعاوى المستعجلـة
+│   │   └── Number of types: 12
+
+Main Category: تنفيذ
+├── Number of subcategories: 4
+│   ├── Subcategory: الامتناع عن قبول السند
+│   │   └── Number of types: 1
+│   ├── Subcategory: دعوى الإعسار أو الملاءة
+│   │   └── Number of types: 2
+│   ├── Subcategory: منازعات شكلية
+│   │   └── Number of types: 2
+│   ├── Subcategory: منازعات غير شكلية
+│   │   └── Number of types: 17
+
+Main Category: جزائية
+├── Number of subcategories: 5
+│   ├── Subcategory: الحق الخاص
+│   │   └── Number of types: 1
+│   ├── Subcategory: الطلبات القضائية
+│   │   └── Number of types: 6
+│   ├── Subcategory: حدود
+│   │   └── Number of types: 1
+│   ├── Subcategory: قصاص
+│   │   └── Number of types: 2
+│   ├── Subcategory: مطالبة مالية
+│   │   └── Number of types: 6
+
+Main Category: عامة
+├── Number of subcategories: 6
+│   ├── Subcategory: أخرى
+│   │   └── Number of types: 7
+│   ├── Subcategory: الدعاوى المستعجلة
+│   │   └── Number of types: 9
+│   ├── Subcategory: عقارية
+│   │   └── Number of types: 9
+│   ├── Subcategory: مالية
+│   │   └── Number of types: 18
+│   ├── Subcategory: مروري
+│   │   └── Number of types: 1
+│   ├── Subcategory: الاستئناف
+│   │   └── Number of types: 1
+
+Main Category: عمالية
+├── Number of subcategories: 7
+│   ├── Subcategory: اعتراض على قرارات
+│   │   └── Number of types: 5
+│   ├── Subcategory: الطلبات العارضة والعاجلة
+│   │   └── Number of types: 6
+│   ├── Subcategory: حقوق مالية
+│   │   └── Number of types: 8
+│   ├── Subcategory: حقوق وظيفية
+│   │   └── Number of types: 7
+│   ├── Subcategory: مستندات ووثائق
+│   │   └── Number of types: 3
+│   ├── Subcategory: تعويض
+│   │   └── Number of types: 10
+│   ├── Subcategory: الاستئناف
+│   │   └── Number of types: 1
+
+Main Category: إنهاءات
+├── Number of subcategories: 7
+│   ├── Subcategory: الورثة
+│   │   └── Number of types: 3
+│   ├── Subcategory: الولايات
+│   │   └── Number of types: 9
+│   ├── Subcategory: إثباتات اجتماعية
+│   │   └── Number of types: 7
+│   ├── Subcategory: الأوقاف والوصايا
+│   │   └── Number of types: 8
+│   ├── Subcategory: الأذونات
+│   │   └── Number of types: 1
+│   ├── Subcategory: تعديلات الصكوك
+│   │   └── Number of types: 1
+│   ├── Subcategory: إنهاءات الأوقاف والمواريث في الأحساء والقطيف.
+│   │   └── Number of types: 12
+
+JSON File Analysis:
+==================================================
+Main categories: 7
+Subcategories: 42
+Types: 246
+
+Detailed Structure Analysis:
+==================================================
+
+Main Category: أحوال شخصية
+├── Number of subcategories: 6
+│   ├── Subcategory: التصنيف العام
+│   │   └── Number of types: 8
+│   ├── Subcategory: دعاوى الأوقاف والوصايا
+│   │   └── Number of types: 5
+│   ├── Subcategory: دعاوى الحضانة والزيارة والنفقة
+│   │   └── Number of types: 8
+│   ├── Subcategory: دعاوى الزواج والفرقة
+│   │   └── Number of types: 6
+│   ├── Subcategory: دعاوى الولاية
+│   │   └── Number of types: 5
+│   ├── Subcategory: دعاوى قسمة التركات
+│   │   └── Number of types: 4
+
+Main Category: تجاري
+├── Number of subcategories: 7
+│   ├── Subcategory: الاستئناف
+│   │   └── Number of types: 1
+│   ├── Subcategory: الأنظمة التجارية
+│   │   └── Number of types: 12
+│   ├── Subcategory: الشركات
+│   │   └── Number of types: 3
+│   ├── Subcategory: الطلبات القضائية
+│   │   └── Number of types: 6
+│   ├── Subcategory: العقود التجارية
+│   │   └── Number of types: 9
+│   ├── Subcategory: الملكية الفكرية
+│   │   └── Number of types: 3
+│   ├── Subcategory: الدعاوى المستعجلـة
+│   │   └── Number of types: 12
+
+Main Category: تنفيذ
+├── Number of subcategories: 4
+│   ├── Subcategory: الامتناع عن قبول السند
+│   │   └── Number of types: 1
+│   ├── Subcategory: دعوى الإعسار أو الملاءة
+│   │   └── Number of types: 2
+│   ├── Subcategory: منازعات شكلية
+│   │   └── Number of types: 2
+│   ├── Subcategory: منازعات غير شكلية
+│   │   └── Number of types: 17
+
+Main Category: جزائية
+├── Number of subcategories: 5
+│   ├── Subcategory: الحق الخاص
+│   │   └── Number of types: 1
+│   ├── Subcategory: الطلبات القضائية
+│   │   └── Number of types: 6
+│   ├── Subcategory: حدود
+│   │   └── Number of types: 1
+│   ├── Subcategory: قصاص
+│   │   └── Number of types: 2
+│   ├── Subcategory: مطالبة مالية
+│   │   └── Number of types: 6
+
+Main Category: عامة
+├── Number of subcategories: 6
+│   ├── Subcategory: أخرى
+│   │   └── Number of types: 7
+│   ├── Subcategory: الدعاوى المستعجلة
+│   │   └── Number of types: 9
+│   ├── Subcategory: عقارية
+│   │   └── Number of types: 9
+│   ├── Subcategory: مالية
+│   │   └── Number of types: 18
+│   ├── Subcategory: مروري
+│   │   └── Number of types: 1
+│   ├── Subcategory: الاستئناف
+│   │   └── Number of types: 1
+
+Main Category: عمالية
+├── Number of subcategories: 7
+│   ├── Subcategory: اعتراض على قرارات
+│   │   └── Number of types: 5
+│   ├── Subcategory: الطلبات العارضة والعاجلة
+│   │   └── Number of types: 6
+│   ├── Subcategory: حقوق مالية
+│   │   └── Number of types: 8
+│   ├── Subcategory: حقوق وظيفية
+│   │   └── Number of types: 7
+│   ├── Subcategory: مستندات ووثائق
+│   │   └── Number of types: 3
+│   ├── Subcategory: تعويض
+│   │   └── Number of types: 10
+│   ├── Subcategory: الاستئناف
+│   │   └── Number of types: 1
+
+Main Category: إنهاءات
+├── Number of subcategories: 7
+│   ├── Subcategory: الورثة
+│   │   └── Number of types: 3
+│   ├── Subcategory: الولايات
+│   │   └── Number of types: 9
+│   ├── Subcategory: إثباتات اجتماعية
+│   │   └── Number of types: 7
+│   ├── Subcategory: الأوقاف والوصايا
+│   │   └── Number of types: 8
+│   ├── Subcategory: الأذونات
+│   │   └── Number of types: 1
+│   ├── Subcategory: تعديلات الصكوك
+│   │   └── Number of types: 1
+│   ├── Subcategory: إنهاءات الأوقاف والمواريث في الأحساء والقطيف.
+│   │   └── Number of types: 12
