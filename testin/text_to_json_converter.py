@@ -22,35 +22,37 @@ def parse_text_to_json(file_path):
         if current_type and current_sub and current_main:
             # Type level
             if current_main not in result:
-                result[current_main] = {"items": {}}
+                result[current_main] = {"items": {}, "description": ""}
             if current_sub not in result[current_main]["items"]:
-                result[current_main]["items"][current_sub] = {"items": {}}
+                result[current_main]["items"][current_sub] = {"items": {}, "description": ""}
             
             target = result[current_main]["items"][current_sub]["items"]
             if current_type not in target:
-                target[current_type] = {}
+                target[current_type] = {"description": ""}
             target = target[current_type]
             
         elif current_sub and current_main:
             # Sub level
             if current_main not in result:
-                result[current_main] = {"items": {}}
+                result[current_main] = {"items": {}, "description": ""}
             if current_sub not in result[current_main]["items"]:
-                result[current_main]["items"][current_sub] = {"items": {}}
+                result[current_main]["items"][current_sub] = {"items": {}, "description": ""}
             
             target = result[current_main]["items"][current_sub]
             
         elif current_main:
             # Main level
             if current_main not in result:
-                result[current_main] = {"items": {}}
+                result[current_main] = {"items": {}, "description": ""}
             
             target = result[current_main]
         else:
             return
             
-        if description:
-            target["description"] = " ".join(description).strip()
+        # Always set description, even if empty
+        target["description"] = " ".join(description).strip() if description else ""
+        
+        # Only add hints and exceptions if they exist
         if hints:
             target["hints"] = [h.strip() for h in hints]
         if exceptions:
