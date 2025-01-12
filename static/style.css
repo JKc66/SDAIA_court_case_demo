@@ -816,38 +816,6 @@ header {
     display: none !important;
 }
 
-/* Additional Profile Preview Hide Rules */
-._profilePreview_gzau3_63,
-div._profilePreview_gzau3_63,
-[class*="_profilePreview_"],
-[class*="_profileImage_"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    position: absolute !important;
-    pointer-events: none !important;
-    clip: rect(0 0 0 0) !important;
-    margin: -1px !important;
-    padding: 0 !important;
-    border: 0 !important;
-    overflow: hidden !important;
-}
-
-/* Hide any potential parent containers */
-[class*="st-emotion-cache-"] [class*="_profilePreview_"],
-[class*="st-emotion-cache-"] [class*="_profileImage_"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-/* Hide the specific avatar image */
-[data-testid="appCreatorAvatar"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
 /* Hide GitHub Icon in Footer */
 footer {
     display: none !important;
