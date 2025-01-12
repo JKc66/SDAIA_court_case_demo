@@ -659,22 +659,9 @@ def main():
         tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
 
         with tab1:
+            # Display history in detailed view
             notification_icon = "✅"
-            
-            # Add Bootstrap dependencies
-            st.markdown("""
-                <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-                <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-                <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-                <style>
-                    .card-header button { text-align: right; width: 100%; }
-                    .card-header button:hover { text-decoration: none; }
-                    .card-body { text-align: right; direction: rtl; }
-                    .accordion .card { margin-bottom: 5px; }
-                    .delete-btn { float: left; }
-                </style>
-            """, unsafe_allow_html=True)
-            
+
             # Initialize visibility states for each history item
             for i in range(len(st.session_state.history)):
                 if f"item_visible_{i}" not in st.session_state:
@@ -686,83 +673,83 @@ def main():
                 save_history(st.session_state.history)
                 st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
                 st.rerun()  # Force refresh after deletion
-            
-            # Initialize accordion container
-            st.markdown('<div id="historyAccordion" class="accordion">', unsafe_allow_html=True)
-            
-            # Display history items as accordion cards
+
+            # Reverse the history list for display
             visible_count = 0
             for i, entry in enumerate(reversed(st.session_state.history)):
                 real_index = len(st.session_state.history) - 1 - i
-                
+
                 if st.session_state.get(f"item_visible_{real_index}", True):
-                    st.markdown(f"""
-                        <div class="card">
-                            <div class="card-header" id="heading{real_index}">
-                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
-                                    <button class="btn btn-link" data-toggle="collapse" data-target="#collapse{real_index}">
-                                        {entry["input"][:100]}...
-                                    </button>
-                                    <button class="btn btn-sm btn-danger delete-btn" onclick="deleteHistoryItem({real_index})">🗑️</button>
-                                </h5>
+                    if visible_count > 0:
+                        st.markdown("""
+                            <div class="custom-divider">
+                                <span>•••</span>
                             </div>
-                            <div id="collapse{real_index}" class="collapse" data-parent="#historyAccordion">
-                                <div class="card-body">
-                                    <div class="classification-item main-classification">
-                                        <div class="classification-label">
-                                            <span class="classification-icon">📊</span>
-                                            التصنيف الرئيسي
+                        """, unsafe_allow_html=True)
+                    visible_count += 1
+
+                    with st.container():
+                        st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
+                        col_content, col_delete = st.columns([0.95, 0.05])
+
+                        with col_content:
+                            st.markdown(f"""
+                            <div class="case-text">
+                                <strong>البحث:</strong> {entry["input"]}
+                            </div>
+                            """,
+                            unsafe_allow_html=True)
+
+                            if entry["explanation"]:
+                                st.markdown(f"""
+                                    <div class="info-link-container">
+                                        <a href="#" class="info-link">
+                                            شرح اضافي
+                                            <span class="info-icon">i</span>
+                                        </a>
+                                        <div class="info-bubble">
+                                            {entry["explanation"]}
                                         </div>
-                                        <div class="classification-value">{entry["main_classification"]}</div>
                                     </div>
-                                    <div class="classification-item sub-classification">
-                                        <div class="classification-label">
-                                            <span class="classification-icon">🔍</span>
-                                            التصنيف الفرعي
-                                        </div>
-                                        <div class="classification-value">{entry["sub_classification"]}</div>
-                                    </div>
-                                    <div class="classification-item case-type">
-                                        <div class="classification-label">
-                                            <span class="classification-icon">⚖️</span>
-                                            نوع الدعوى
-                                        </div>
-                                        <div class="classification-value">{entry["case_type"]}</div>
-                                    </div>
-                                    {"" if not entry["explanation"] else f'''
-                                    <div class="explanation-section mt-3">
-                                        <h6>شرح اضافي:</h6>
-                                        <p>{entry["explanation"]}</p>
-                                    </div>
-                                    '''}
+                                """, unsafe_allow_html=True)
+
+                        with col_delete:
+                            st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
+                            if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
+                                pass
+                            st.markdown('</div>', unsafe_allow_html=True)
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                        # Classifications
+                        st.markdown(f"""
+                            <div class="classification-item main-classification">
+                                <div class="classification-label">
+                                    <span class="classification-icon">📊</span>
+                                    التصنيف الرئيسي
                                 </div>
+                                <div class="classification-value">{entry["main_classification"]}</div>
                             </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-            
-            # Close accordion container
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Add JavaScript for delete functionality
-            st.markdown("""
-                <script>
-                    function deleteHistoryItem(index) {
-                        // Use Streamlit's component-to-parent communication
-                        window.parent.postMessage({
-                            type: 'streamlit:delete',
-                            index: index
-                        }, '*');
-                    }
-                </script>
-            """, unsafe_allow_html=True)
-            
-            # Handle delete message in Python
-            if st.session_state.get('delete_triggered'):
-                index = st.session_state.get('delete_index')
-                if index is not None:
-                    handle_delete(index)
-                    st.session_state.delete_triggered = False
-                    st.session_state.delete_index = None
+                        """, unsafe_allow_html=True)
+
+                        st.markdown(f"""
+                            <div class="classification-item sub-classification">
+                                <div class="classification-label">
+                                    <span class="classification-icon">🔍</span>
+                                    التصنيف الفرعي
+                                </div>
+                                <div class="classification-value">{entry["sub_classification"]}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                        st.markdown(f"""
+                            <div class="classification-item case-type">
+                                <div class="classification-label">
+                                    <span class="classification-icon">⚖️</span>
+                                    نوع الدعوى
+                                </div>
+                                <div class="classification-value">{entry["case_type"]}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
 
             # Clear all history button
             def handle_clear_all():
