@@ -31,63 +31,90 @@ def get_user_id():
         st.session_state.user_id = str(uuid.uuid4())
     return st.session_state.user_id
 
-def load_history():
-    """Load classification history from JSON file."""
+def validate_json(content):
+    """Validate JSON content."""
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return None
+
+def backup_history_file():
+    """Create a backup of the history file."""
     history_file = Path("history.json")
-    max_retries = 3
-    retry_delay = 0.5
-    
-    for attempt in range(max_retries):
+    backup_file = Path("history.json.backup")
+    if history_file.exists():
         try:
-            with file_lock(history_file) as f:
-                if f is None:
-                    return []
-                    
-                if f.tell() == 0:  # New or empty file
-                    return []
-                    
-                f.seek(0)
-                content = f.read()
-                if not content.strip():
-                    return []
-                    
-                return json.loads(content)
-                
-        except json.JSONDecodeError as e:
-            if attempt == max_retries - 1:
-                st.error(f"Error reading history file: {e}")
-                return []
-            time.sleep(retry_delay)
-        except Exception as e:
-            if attempt == max_retries - 1:
-                st.error(f"Unexpected error loading history: {e}")
-                return []
-            time.sleep(retry_delay)
+            with open(history_file, 'r', encoding='utf-8') as source:
+                content = source.read()
+                if validate_json(content):  # Only backup valid JSON
+                    with open(backup_file, 'w', encoding='utf-8') as target:
+                        target.write(content)
+        except Exception:
+            pass
+
+def load_history():
+    """Load classification history from JSON file with robust error handling."""
+    history_file = Path("history.json")
+    backup_file = Path("history.json.backup")
     
-    return []
+    try:
+        # Try loading main file
+        if history_file.exists():
+            with open(history_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    data = validate_json(content)
+                    if data is not None:
+                        return data
+                    
+        # If main file fails, try backup
+        if backup_file.exists():
+            with open(backup_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    data = validate_json(content)
+                    if data is not None:
+                        # Restore from backup
+                        save_history(data)
+                        return data
+        
+        # If both files fail, start fresh
+        return []
+        
+    except Exception as e:
+        st.error(f"Error loading history: {e}")
+        return []
 
 def save_history(history):
-    """Save classification history to JSON file."""
+    """Save classification history to JSON file with backup."""
     history_file = Path("history.json")
-    max_retries = 3
-    retry_delay = 0.5
-    
-    for attempt in range(max_retries):
-        try:
-            with file_lock(history_file) as f:
-                if f is None:
-                    return
-                    
-                # Write the history
-                f.seek(0)
-                f.truncate()
-                json.dump(history, f, ensure_ascii=False, indent=4)
-                return
-                
-        except Exception as e:
-            if attempt == max_retries - 1:
-                st.error(f"Failed to save history: {e}")
-            time.sleep(retry_delay)
+    backup_file = Path("history.json.backup")
+    try:
+        # Create backup of existing file first
+        backup_history_file()
+        
+        # Write to temporary file
+        temp_file = history_file.with_suffix('.tmp')
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=4)
+        
+        # Validate the written content
+        with open(temp_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+            if validate_json(content) is None:
+                raise ValueError("Failed to write valid JSON")
+        
+        # If validation passes, move temp file to actual file
+        temp_file.replace(history_file)
+        
+    except Exception as e:
+        st.error(f"Error saving history: {e}")
+        # Try to restore from backup if save fails
+        if backup_file.exists():
+            try:
+                backup_file.replace(history_file)
+            except:
+                pass
 
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
@@ -233,12 +260,22 @@ def initialize_gemini(key_id):
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
 def main():
-    # Initialize session state for history - only load from file if not already in session state
+    # Initialize history at startup
     if 'history' not in st.session_state:
         st.session_state.history = load_history()
-        if st.session_state.history is None:  # Ensure we never set None as history
-            st.session_state.history = []
-            
+    
+    # Ensure history is never None
+    if st.session_state.history is None:
+        st.session_state.history = []
+    
+    # Remove the periodic refresh and replace with event-based updates
+    if "history_needs_refresh" not in st.session_state:
+        st.session_state.history_needs_refresh = False
+    
+    if st.session_state.history_needs_refresh:
+        st.session_state.history = load_history()
+        st.session_state.history_needs_refresh = False
+
     # Add new session state for delete operations
     if "delete_triggered" not in st.session_state:
         st.session_state.delete_triggered = False
@@ -345,7 +382,7 @@ def main():
 
         with col2:
             def handle_new_case():
-                # Preserve history by not touching st.session_state.history
+                """Handle new case while preserving history."""
                 # Only reset current case related states
                 st.session_state.case_submitted = False
                 st.session_state.current_results = None
@@ -353,6 +390,9 @@ def main():
                 # Clear only the input field
                 if "rtl_input" in st.session_state:
                     st.session_state.rtl_input = ""
+                # Ensure history is loaded
+                if 'history' not in st.session_state:
+                    st.session_state.history = load_history()
 
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
@@ -406,14 +446,13 @@ def main():
                 "user_id": get_user_id()
             }
 
+            # Update history both in session state and file
             st.session_state.history.append(new_entry)
             save_history(st.session_state.history)
             st.session_state.current_results = new_entry
             st.session_state.case_submitted = True
             st.session_state.loading = False
-            # Force an immediate refresh of the history
-            st.session_state.last_update = 0  # This will trigger a refresh on next rerun
-            st.rerun()
+            st.rerun()  # Force refresh to show new entry
 
         elif st.session_state.current_results:
             latest_entry = st.session_state.current_results
@@ -561,6 +600,7 @@ def main():
                 st.session_state.history.pop(index)
                 save_history(st.session_state.history)
                 st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
+                st.rerun()  # Force refresh after deletion
 
             # Reverse the history list for display
             visible_count = 0
@@ -646,6 +686,7 @@ def main():
                     save_history([])
                     st.toast("تم مسح السجل بالكامل", icon=notification_icon)
                     st.session_state.clear_triggered = True
+                    st.rerun()  # Force refresh after clearing
 
             st.markdown('<div class="clear-all-button-container">', unsafe_allow_html=True)
             if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
@@ -673,17 +714,6 @@ def main():
 
     else:
         st.markdown('<div class="info-message">لا يوجد سجل تصنيفات سابقة</div>', unsafe_allow_html=True)
-
-    # Add more frequent history refresh (every 5 seconds instead of 30)
-    if time.time() - st.session_state.last_update > 5:  # Refresh every 5 seconds
-        loaded_history = load_history()
-        if loaded_history is not None:  # Only update if we got valid history
-            st.session_state.history = loaded_history
-        st.session_state.last_update = time.time()
-        # Only rerun if the history has actually changed
-        if st.session_state.history != st.session_state.get('previous_history', []):
-            st.session_state.previous_history = st.session_state.history.copy()
-            st.rerun()
 
 if __name__ == "__main__":
     main()
