@@ -139,7 +139,7 @@ def initialize_gemini(key_id):
                 "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
                 "the output should be in arabic. make the a json object. "
                 "the keys are: category, subcategory, type, explanation. "
-                "if none of the types fit the case at all, return '-' for the type."
+                "if none of the types fit the case at all, return 'لا يوجد' for the type."
             )
         )
 
