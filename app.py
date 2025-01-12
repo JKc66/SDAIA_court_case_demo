@@ -412,7 +412,8 @@ def main():
             st.session_state.current_results = new_entry
             st.session_state.case_submitted = True
             st.session_state.loading = False
-            st.session_state.last_update = time.time()
+            # Force an immediate refresh of the history
+            st.session_state.last_update = 0  # This will trigger a refresh on next rerun
             st.rerun()
 
         elif st.session_state.current_results:
@@ -674,10 +675,14 @@ def main():
     else:
         st.markdown('<div class="info-message">لا يوجد سجل تصنيفات سابقة</div>', unsafe_allow_html=True)
 
-    # Add periodic history refresh
-    if time.time() - st.session_state.last_update > 30:  # Refresh every 30 seconds
+    # Add more frequent history refresh (every 5 seconds instead of 30)
+    if time.time() - st.session_state.last_update > 5:  # Refresh every 5 seconds
         st.session_state.history = load_history()
         st.session_state.last_update = time.time()
+        # Only rerun if the history has actually changed
+        if st.session_state.history != st.session_state.get('previous_history', []):
+            st.session_state.previous_history = st.session_state.history.copy()
+            st.rerun()
 
 if __name__ == "__main__":
     main()
