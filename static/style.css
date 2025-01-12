@@ -853,4 +853,13 @@ footer {
 ._profileImage_gzau3_78,
 ._link_gzau3_10 {
     display: none !important;
+    visibility: hidden !important;
+}
+
+/* Hide Streamlit's default elements */
+._profileContainer_gzau3_53,
+._link_gzau3_10,
+div[data-testid="stDecoration"] {
+    display: none !important;
+    visibility: hidden !important;
 }
