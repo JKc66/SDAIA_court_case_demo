@@ -12,50 +12,18 @@ import io
 import openpyxl
 import uuid
 from contextlib import contextmanager
-import msvcrt
-import platform
 
 NUM_KEYS = 1
 
-# File locking mechanism
 @contextmanager
 def file_lock(file_path):
-    """Context manager for file locking to handle concurrent access."""
-    if platform.system() == 'Windows':
-        try:
-            with open(file_path, 'r+' if os.path.exists(file_path) else 'w+') as f:
-                try:
-                    while True:
-                        try:
-                            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
-                            break
-                        except IOError:
-                            time.sleep(0.1)
-                    yield f
-                finally:
-                    try:
-                        f.seek(0)
-                        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
-                    except IOError:
-                        pass
-        except IOError as e:
-            st.error(f"Error accessing history file: {e}")
-            yield None
-    else:  # Unix-like systems
-        try:
-            import fcntl
-            with open(file_path, 'r+' if os.path.exists(file_path) else 'w+') as f:
-                try:
-                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-                    yield f
-                finally:
-                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-        except ImportError:
-            st.error("File locking not supported on this system")
-            yield None
-        except IOError as e:
-            st.error(f"Error accessing history file: {e}")
-            yield None
+    """Simple file handling context manager for cloud environment."""
+    try:
+        with open(file_path, 'r+' if os.path.exists(file_path) else 'w+') as f:
+            yield f
+    except IOError as e:
+        st.error(f"Error accessing history file: {e}")
+        yield None
 
 def get_user_id():
     """Get or create a unique user ID for the current session."""
@@ -64,7 +32,7 @@ def get_user_id():
     return st.session_state.user_id
 
 def load_history():
-    """Load classification history from JSON file with proper locking."""
+    """Load classification history from JSON file."""
     history_file = Path("history.json")
     max_retries = 3
     retry_delay = 0.5
@@ -99,7 +67,7 @@ def load_history():
     return []
 
 def save_history(history):
-    """Save classification history to JSON file with proper locking."""
+    """Save classification history to JSON file."""
     history_file = Path("history.json")
     max_retries = 3
     retry_delay = 0.5
@@ -110,20 +78,10 @@ def save_history(history):
                 if f is None:
                     return
                     
-                # Read existing history first
-                f.seek(0)
-                try:
-                    existing_history = json.loads(f.read()) if f.tell() > 0 else []
-                except (json.JSONDecodeError, IOError):
-                    existing_history = []
-                
-                # Merge histories, keeping the most recent entries
-                merged_history = existing_history + [entry for entry in history if entry not in existing_history]
-                
-                # Write back the merged history
+                # Write the history
                 f.seek(0)
                 f.truncate()
-                json.dump(merged_history, f, ensure_ascii=False, indent=4)
+                json.dump(history, f, ensure_ascii=False, indent=4)
                 return
                 
         except Exception as e:
