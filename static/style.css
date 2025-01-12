@@ -948,26 +948,33 @@ div._profilePreview_gzau3_63,
         padding: 10px;
     }
 
-    .logo-container.left-logos,
-    .logo-container.right-logos {
-        width: 100%;
-        justify-content: center;
-        gap: 15px;
-    }
-
-    .logo-container img {
-        max-width: 45% !important;
-        margin: 0;
-    }
-
     .app-title {
         width: 100%;
         margin: 10px 0;
+        order: -1; /* Ensures app title (main logo) appears first */
     }
 
     .app-title .main-logo {
         max-width: 80%;
         margin: 0 auto;
+        display: block;
+    }
+
+    .logo-container.left-logos,
+    .logo-container.right-logos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        width: 100%;
+        padding: 0 10px;
+        order: 1; /* Ensures logos appear after main logo */
+    }
+
+    .logo-container img {
+        max-width: 100% !important;
+        height: auto;
+        margin: 0;
+        object-fit: contain;
     }
 
     .app-title h1 {
@@ -982,11 +989,12 @@ div._profilePreview_gzau3_63,
 @media screen and (max-width: 480px) {
     .logo-container.left-logos,
     .logo-container.right-logos {
-        flex-wrap: wrap;
+        gap: 10px;
+        padding: 0 5px;
     }
 
     .logo-container img {
-        max-width: 80% !important;
+        max-width: 100% !important;
     }
 
     .app-title h1 {
