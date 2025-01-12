@@ -821,3 +821,29 @@ footer {
 .st-emotion-cache-cio0dv.ea3mdgi1 {
     display: none !important;
 }
+
+/* Hide Streamlit elements */
+#MainMenu {
+    visibility: hidden !important;
+}
+
+#GithubIcon {
+    visibility: hidden !important;
+}
+
+/* Hide github profile image and related elements */
+.viewerBadge_container__1QSob {
+    display: none !important;
+}
+
+.stDeployButton {
+    display: none !important;
+}
+
+footer {
+    visibility: hidden !important;
+}
+
+#stDecoration {
+    display: none !important;
+}

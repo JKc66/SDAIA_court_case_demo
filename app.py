@@ -10,8 +10,127 @@ import datetime
 import pandas as pd
 import io
 import openpyxl
+import uuid
+from contextlib import contextmanager
+import msvcrt
+import platform
 
 NUM_KEYS = 1
+
+# File locking mechanism
+@contextmanager
+def file_lock(file_path):
+    """Context manager for file locking to handle concurrent access."""
+    if platform.system() == 'Windows':
+        try:
+            with open(file_path, 'r+' if os.path.exists(file_path) else 'w+') as f:
+                try:
+                    while True:
+                        try:
+                            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+                            break
+                        except IOError:
+                            time.sleep(0.1)
+                    yield f
+                finally:
+                    try:
+                        f.seek(0)
+                        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+                    except IOError:
+                        pass
+        except IOError as e:
+            st.error(f"Error accessing history file: {e}")
+            yield None
+    else:  # Unix-like systems
+        try:
+            import fcntl
+            with open(file_path, 'r+' if os.path.exists(file_path) else 'w+') as f:
+                try:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    yield f
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except ImportError:
+            st.error("File locking not supported on this system")
+            yield None
+        except IOError as e:
+            st.error(f"Error accessing history file: {e}")
+            yield None
+
+def get_user_id():
+    """Get or create a unique user ID for the current session."""
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = str(uuid.uuid4())
+    return st.session_state.user_id
+
+def load_history():
+    """Load classification history from JSON file with proper locking."""
+    history_file = Path("history.json")
+    max_retries = 3
+    retry_delay = 0.5
+    
+    for attempt in range(max_retries):
+        try:
+            with file_lock(history_file) as f:
+                if f is None:
+                    return []
+                    
+                if f.tell() == 0:  # New or empty file
+                    return []
+                    
+                f.seek(0)
+                content = f.read()
+                if not content.strip():
+                    return []
+                    
+                return json.loads(content)
+                
+        except json.JSONDecodeError as e:
+            if attempt == max_retries - 1:
+                st.error(f"Error reading history file: {e}")
+                return []
+            time.sleep(retry_delay)
+        except Exception as e:
+            if attempt == max_retries - 1:
+                st.error(f"Unexpected error loading history: {e}")
+                return []
+            time.sleep(retry_delay)
+    
+    return []
+
+def save_history(history):
+    """Save classification history to JSON file with proper locking."""
+    history_file = Path("history.json")
+    max_retries = 3
+    retry_delay = 0.5
+    
+    for attempt in range(max_retries):
+        try:
+            with file_lock(history_file) as f:
+                if f is None:
+                    return
+                    
+                # Read existing history first
+                f.seek(0)
+                try:
+                    existing_history = json.loads(f.read()) if f.tell() > 0 else []
+                except (json.JSONDecodeError, IOError):
+                    existing_history = []
+                
+                # Merge histories, keeping the most recent entries
+                merged_history = existing_history + [entry for entry in history if entry not in existing_history]
+                
+                # Write back the merged history
+                f.seek(0)
+                f.truncate()
+                json.dump(merged_history, f, ensure_ascii=False, indent=4)
+                return
+                
+        except Exception as e:
+            if attempt == max_retries - 1:
+                st.error(f"Failed to save history: {e}")
+            time.sleep(retry_delay)
+
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
 #------------------------------------------------------------------------------
@@ -37,25 +156,6 @@ load_css()
 #------------------------------------------------------------------------------
 # UTILITY FUNCTIONS
 #------------------------------------------------------------------------------
-def load_history():
-    """Load classification history from JSON file"""
-    try:
-        history_file = Path("history.json")
-        if not history_file.exists():
-            return []
-        with open(history_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-def save_history(history):
-    """Save classification history to JSON file"""
-    try:
-        with open('history.json', 'w', encoding='utf-8') as f:
-            json.dump(history, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        st.error(f"Failed to save history: {e}")
-
 def get_base64_logo(filename):
     """Load and encode logo files to base64"""
     try:
@@ -175,6 +275,14 @@ def initialize_gemini(key_id):
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
 def main():
+    # Initialize session state for history
+    if 'history' not in st.session_state:
+        st.session_state.history = []
+    
+    # Load history at the start of each session
+    if not st.session_state.history:
+        st.session_state.history = load_history()
+
     # Add new session state for delete operations
     if "delete_triggered" not in st.session_state:
         st.session_state.delete_triggered = False
@@ -186,6 +294,8 @@ def main():
         st.session_state.delete_index = None
     if "key_id" not in st.session_state:
         st.session_state.key_id = randint(1, NUM_KEYS)
+    if "last_update" not in st.session_state:
+        st.session_state.last_update = time.time()
 
     # Initialize session state
     if "history" not in st.session_state:
@@ -334,14 +444,17 @@ def main():
                 "sub_classification": s_calss_example,
                 "case_type": case_type_example,
                 "explanation": explanation,
-                "id": len(st.session_state.history)
+                "id": len(st.session_state.history),
+                "timestamp": time.time(),
+                "user_id": get_user_id()
             }
 
-            st.session_state.current_results = new_entry
             st.session_state.history.append(new_entry)
             save_history(st.session_state.history)
+            st.session_state.current_results = new_entry
             st.session_state.case_submitted = True
             st.session_state.loading = False
+            st.session_state.last_update = time.time()
             st.rerun()
 
         elif st.session_state.current_results:
@@ -602,6 +715,11 @@ def main():
 
     else:
         st.markdown('<div class="info-message">لا يوجد سجل تصنيفات سابقة</div>', unsafe_allow_html=True)
+
+    # Add periodic history refresh
+    if time.time() - st.session_state.last_update > 30:  # Refresh every 30 seconds
+        st.session_state.history = load_history()
+        st.session_state.last_update = time.time()
 
 if __name__ == "__main__":
     main()
