@@ -33,6 +33,7 @@ header {
     padding: 0 20px;
     margin: 0;
     width: 100%;
+    position: relative;
 }
 
 /* Logo Styling */
@@ -41,6 +42,8 @@ header {
     align-items: center;
     justify-content: center;
     gap: 30px;
+    position: relative;
+    padding: 0 20px;
 }
 
 .logo-container.left-logos,
@@ -48,13 +51,14 @@ header {
     flex: 0 0 450px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
 }
 
 .logo-container img {
     height: auto;
     width: auto;
     object-fit: contain;
+    margin: 0 15px;
 }
 
 .logo-container.left-logos img:nth-child(1) { width: 260px; } /* Najiz logo */
@@ -66,6 +70,11 @@ header {
 .app-title {
     flex: 1;
     text-align: center;
+    margin: 0 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .app-title h1 {
@@ -84,6 +93,13 @@ header {
     font-size: 1.2em;
     color: #101820;
     margin: 5px 0 0;
+}
+
+.app-title .main-logo {
+    max-height: 350px;
+    width: auto;
+    margin-bottom: 2px;
+    display: block;
 }
 
 /* Title Animation */

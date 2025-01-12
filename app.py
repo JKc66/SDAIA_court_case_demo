@@ -201,10 +201,11 @@ def main():
 
     # Load logos
     logos = {
-        'najiz': get_base64_logo("logo_najiz.svg"),
+        'Injaz': get_base64_logo("logoH.png"),
         'justice': get_base64_logo("justice.svg"),
         'sdaia': get_base64_logo("SDAIA.svg"),
-        'gov': get_base64_logo("DigitaGov.png.svg")
+        'gov': get_base64_logo("DigitaGov.png.svg"),
+        'main': get_base64_logo("LOGO.svg")
     }
 
     notification_icon = "✅"
@@ -213,11 +214,11 @@ def main():
     st.markdown(f'''
         <div class="header-container">
             <div class="logo-container left-logos">
-                <img src="data:image/svg+xml;base64,{logos['najiz']}" alt="Najiz Logo">
+                <img src="data:image/png;base64,{logos['Injaz']}" alt="Injaz Logo">
                 <img src="data:image/svg+xml;base64,{logos['sdaia']}" alt="SDAIA Logo">
             </div>
             <div class="app-title">
-                <h1>نـاظـر</h1>
+                <img src="data:image/svg+xml;base64,{logos['main']}" alt="Main Logo" class="main-logo">
                 <p>نظام تصنيف القضايا الذكي</p>
             </div>
             <div class="logo-container right-logos">
