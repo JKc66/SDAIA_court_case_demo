@@ -219,7 +219,6 @@ def main():
             </div>
             <div class="app-title">
                 <img src="data:image/svg+xml;base64,{logos['main']}" alt="Main Logo" class="main-logo">
-                <p>نظام تصنيف القضايا الذكي</p>
             </div>
             <div class="logo-container right-logos">
                 <img src="data:image/svg+xml;base64,{logos['justice']}" alt="Justice Logo">

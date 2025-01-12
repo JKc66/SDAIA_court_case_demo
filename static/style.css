@@ -11,17 +11,17 @@ body {
 
 /* Layout & Spacing */
 .block-container {
-    padding-top: 2rem;
-    margin-top: 0;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
 }
 
 .main .block-container {
-    padding: 1rem 4rem;
-    margin-top: 0;
+    padding: 0 4rem !important;
+    margin: 0 !important;
 }
 
 header {
-    padding: 1rem !important;
+    padding: 0 !important;
     margin: 0 !important;
 }
 
@@ -30,7 +30,7 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0;
     margin: 0;
     width: 100%;
     position: relative;
@@ -41,9 +41,9 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 30px;
+    gap: 10px;
     position: relative;
-    padding: 0 20px;
+    padding: 0 5px;
 }
 
 .logo-container.left-logos,
@@ -70,7 +70,7 @@ header {
 .app-title {
     flex: 1;
     text-align: center;
-    margin: 0 40px;
+    margin: 0 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -92,13 +92,14 @@ header {
     font-family: 'Noto Kufi Arabic', sans-serif;
     font-size: 1.2em;
     color: #101820;
-    margin: 5px 0 0;
+    margin: 0;
+    font-weight: 700;
 }
 
 .app-title .main-logo {
-    max-height: 350px;
+    max-height: 300px;
     width: auto;
-    margin-bottom: 2px;
+    margin-bottom: 0;
     display: block;
 }
 
