@@ -12,6 +12,7 @@ import io
 import openpyxl
 import uuid
 from contextlib import contextmanager
+import streamlit.components.v1 as components
 
 NUM_KEYS = 1
 
@@ -116,6 +117,83 @@ def save_history(history):
             except:
                 pass
 
+def inject_custom_css():
+    """Load external CSS file"""
+    css_file = Path(__file__).parent / "static" / "style.css"
+    with open(css_file, 'r', encoding='utf-8') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+def hide_streamlit_elements():
+    """Inject JavaScript to hide Streamlit elements"""
+    hide_streamlit_script = """
+        <script>
+            function hideElements() {
+                // Hide all Streamlit elements
+                const elementsToHide = [
+                    '.stDeployButton',
+                    'footer',
+                    '#MainMenu',
+                    '[data-testid="stToolbar"]',
+                    '.css-1dp5vir',
+                    '.css-14xtw13',
+                    '.css-1kyxreq',
+                    '.css-1q1n0ol',
+                    '[data-testid="stHeader"]',
+                    '[data-testid="stDecoration"]',
+                    '.viewerBadge_container__1QSob',
+                    '.css-1avcm0n',
+                    '.css-18ni7ap',
+                    '.element-container iframe[src*="github.com"]',
+                    '._profilePreview_gzau3_63',
+                    'div._profilePreview_gzau3_63',
+                    '._profilePreview_gzau3_63 a',
+                    '._profilePreview_gzau3_63 img',
+                    '.stAppHeader',
+                    '._profileImage_gzau3_78',
+                    '._link_gzau3_10',
+                    '._profileContainer_gzau3_53'
+                ];
+
+                // Create a MutationObserver to handle dynamically added elements
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.addedNodes.length) {
+                            elementsToHide.forEach((selector) => {
+                                document.querySelectorAll(selector).forEach((el) => {
+                                    el.style.display = 'none';
+                                    el.style.visibility = 'hidden';
+                                    el.style.opacity = '0';
+                                    el.style.pointerEvents = 'none';
+                                });
+                            });
+                        }
+                    });
+                });
+
+                // Start observing the document with the configured parameters
+                observer.observe(document.body, { childList: true, subtree: true });
+
+                // Initial hide
+                elementsToHide.forEach((selector) => {
+                    document.querySelectorAll(selector).forEach((el) => {
+                        el.style.display = 'none';
+                        el.style.visibility = 'hidden';
+                        el.style.opacity = '0';
+                        el.style.pointerEvents = 'none';
+                    });
+                });
+            }
+
+            // Run on load and after any dynamic content changes
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', hideElements);
+            } else {
+                hideElements();
+            }
+        </script>
+    """
+    components.html(hide_streamlit_script, height=0, width=0)
+
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
 #------------------------------------------------------------------------------
@@ -129,14 +207,8 @@ st.set_page_config(
 #------------------------------------------------------------------------------
 # STYLES AND SCRIPTS
 #------------------------------------------------------------------------------
-def load_css():
-    """Load external CSS file"""
-    css_file = Path(__file__).parent / "static" / "style.css"
-    with open(css_file, 'r', encoding='utf-8') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-
-# Load CSS and JavaScript
-load_css()
+inject_custom_css()
+hide_streamlit_elements()
 
 #------------------------------------------------------------------------------
 # UTILITY FUNCTIONS
