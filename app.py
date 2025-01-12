@@ -233,12 +233,12 @@ def initialize_gemini(key_id):
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
 def main():
-    # Initialize session state for history
+    # Initialize session state for history - only load from file if not already in session state
     if 'history' not in st.session_state:
-        st.session_state.history = load_history() or []
-    elif not st.session_state.history:
-        st.session_state.history = load_history() or []
-
+        st.session_state.history = load_history()
+        if st.session_state.history is None:  # Ensure we never set None as history
+            st.session_state.history = []
+            
     # Add new session state for delete operations
     if "delete_triggered" not in st.session_state:
         st.session_state.delete_triggered = False
@@ -345,15 +345,15 @@ def main():
 
         with col2:
             def handle_new_case():
-                # Only reset the current case state
+                # Preserve history by not touching st.session_state.history
+                # Only reset current case related states
                 st.session_state.case_submitted = False
                 st.session_state.current_results = None
                 st.session_state.loading = False
                 # Clear only the input field
                 if "rtl_input" in st.session_state:
                     st.session_state.rtl_input = ""
-                # Do NOT modify the history state at all
-                
+
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
 
@@ -676,7 +676,9 @@ def main():
 
     # Add more frequent history refresh (every 5 seconds instead of 30)
     if time.time() - st.session_state.last_update > 5:  # Refresh every 5 seconds
-        st.session_state.history = load_history()
+        loaded_history = load_history()
+        if loaded_history is not None:  # Only update if we got valid history
+            st.session_state.history = loaded_history
         st.session_state.last_update = time.time()
         # Only rerun if the history has actually changed
         if st.session_state.history != st.session_state.get('previous_history', []):
