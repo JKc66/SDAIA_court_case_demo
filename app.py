@@ -235,16 +235,9 @@ def initialize_gemini(key_id):
 def main():
     # Initialize session state for history
     if 'history' not in st.session_state:
-        st.session_state.history = []
-    
-    # Always try to load history from file and merge with session state
-    file_history = load_history()
-    if file_history:
-        # Update session history with file history while preserving any new entries
-        current_entries = {(entry.get('input', ''), entry.get('timestamp', 0)) for entry in st.session_state.history}
-        for entry in file_history:
-            if (entry.get('input', ''), entry.get('timestamp', 0)) not in current_entries:
-                st.session_state.history.append(entry)
+        st.session_state.history = load_history() or []
+    elif not st.session_state.history:
+        st.session_state.history = load_history() or []
 
     # Add new session state for delete operations
     if "delete_triggered" not in st.session_state:
@@ -260,9 +253,7 @@ def main():
     if "last_update" not in st.session_state:
         st.session_state.last_update = time.time()
 
-    # Initialize session state
-    if "history" not in st.session_state:
-        st.session_state.history = load_history()
+    # Remove duplicate history initialization
     if "case_submitted" not in st.session_state:
         st.session_state.case_submitted = False
     if "loading" not in st.session_state:
@@ -354,17 +345,15 @@ def main():
 
         with col2:
             def handle_new_case():
+                # Only reset the current case state
                 st.session_state.case_submitted = False
                 st.session_state.current_results = None
                 st.session_state.loading = False
                 # Clear only the input field
                 if "rtl_input" in st.session_state:
                     st.session_state.rtl_input = ""
-                # Ensure history is preserved by reloading from file
-                file_history = load_history()
-                if file_history:
-                    st.session_state.history = file_history
-
+                # Do NOT modify the history state at all
+                
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
 
