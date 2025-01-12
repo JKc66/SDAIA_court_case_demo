@@ -914,3 +914,8 @@ footer {
         font-size: 2.5em;
     }
 }
+
+/* Hide Streamlit header */
+.stAppHeader {
+    display: none !important;
+}
