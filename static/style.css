@@ -847,3 +847,10 @@ footer {
 #stDecoration {
     display: none !important;
 }
+
+/* Hide Streamlit UI Elements */
+.stAppHeader,
+._profileImage_gzau3_78,
+._link_gzau3_10 {
+    display: none !important;
+}
