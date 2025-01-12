@@ -16,4 +16,3 @@ level = "warning"
 
 [ui]
 hideTopBar = true
-hideSidebarNav = true
