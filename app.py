@@ -38,47 +38,24 @@ def validate_json(content):
     except json.JSONDecodeError:
         return None
 
-def backup_history_file():
-    """Create a backup of the history file."""
-    history_file = Path("history.json")
-    backup_file = Path("history.json.backup")
-    if history_file.exists():
-        try:
-            with open(history_file, 'r', encoding='utf-8') as source:
-                content = source.read()
-                if validate_json(content):  # Only backup valid JSON
-                    with open(backup_file, 'w', encoding='utf-8') as target:
-                        target.write(content)
-        except Exception:
-            pass
-
 def load_history():
     """Load classification history from JSON file with robust error handling."""
     history_file = Path("history.json")
-    backup_file = Path("history.json.backup")
     
     try:
-        # Try loading main file
         if history_file.exists():
             with open(history_file, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 if content:
                     data = validate_json(content)
                     if data is not None:
-                        return data
-                    
-        # If main file fails, try backup
-        if backup_file.exists():
-            with open(backup_file, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                if content:
-                    data = validate_json(content)
-                    if data is not None:
-                        # Restore from backup
-                        save_history(data)
+                        # Ensure all entries have IDs
+                        for entry in data:
+                            if 'id' not in entry:
+                                entry['id'] = str(uuid.uuid4())
                         return data
         
-        # If both files fail, start fresh
+        # If file doesn't exist or is invalid, start fresh
         return []
         
     except Exception as e:
@@ -86,35 +63,15 @@ def load_history():
         return []
 
 def save_history(history):
-    """Save classification history to JSON file with backup."""
+    """Save classification history to JSON file."""
     history_file = Path("history.json")
-    backup_file = Path("history.json.backup")
     try:
-        # Create backup of existing file first
-        backup_history_file()
-        
-        # Write to temporary file
-        temp_file = history_file.with_suffix('.tmp')
-        with open(temp_file, 'w', encoding='utf-8') as f:
+        # Write directly to the file
+        with open(history_file, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=4)
-        
-        # Validate the written content
-        with open(temp_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-            if validate_json(content) is None:
-                raise ValueError("Failed to write valid JSON")
-        
-        # If validation passes, move temp file to actual file
-        temp_file.replace(history_file)
-        
+            
     except Exception as e:
         st.error(f"Error saving history: {e}")
-        # Try to restore from backup if save fails
-        if backup_file.exists():
-            try:
-                backup_file.replace(history_file)
-            except:
-                pass
 
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
@@ -423,6 +380,13 @@ def main():
                 print(f"Gemini API response took {duration:.2f} seconds")
                 try:
                     data = json.loads(response.text)
+                    # Handle list response by taking first item
+                    if isinstance(data, list) and len(data) > 0:
+                        data = data[0]
+                    # Validate that we have a dictionary with required keys
+                    if not isinstance(data, dict) or not all(key in data for key in ['category', 'subcategory', 'type']):
+                        print(f"Invalid response structure: {data}")
+                        data = False
                 except json.JSONDecodeError as e:
                     print(f"Error decoding JSON: {e}")
                     data = False
@@ -437,9 +401,10 @@ def main():
                 m_calss_example = data['category']
                 s_calss_example = data['subcategory']
                 case_type_example = data['type']
-                explanation = data.get('explanation', '-') # Handle cases where explanation might be missing
+                explanation = data.get('explanation', '-')  # Handle cases where explanation might be missing
 
             new_entry = {
+                "id": str(uuid.uuid4()),
                 "input": user_input,
                 "main_classification": m_calss_example,
                 "sub_classification": s_calss_example,
@@ -596,8 +561,9 @@ def main():
                 if f"item_visible_{i}" not in st.session_state:
                     st.session_state[f"item_visible_{i}"] = True
 
-            def handle_delete(index):
-                st.session_state.history.pop(index)
+            def handle_delete(entry_id):
+                # Find and remove entry by ID
+                st.session_state.history = [entry for entry in st.session_state.history if entry['id'] != entry_id]
                 save_history(st.session_state.history)
                 st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
                 st.session_state.deletion_triggered = True
@@ -640,7 +606,7 @@ def main():
 
                     with col_delete:
                         st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
-                        if st.button("🗑️", key=f"delete_{i}", on_click=handle_delete, args=(len(st.session_state.history) - 1 - i,)):
+                        if st.button("🗑️", key=f"delete_{entry['id']}", on_click=handle_delete, args=(entry['id'],)):
                             pass
                         st.markdown('</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
