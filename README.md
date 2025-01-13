@@ -21,36 +21,12 @@ A Streamlit-based web application for Enjaz Hackathon.
 │   ├── analyze_structure.py           # Data structure analysis
 │   └── various data files (.json, .yaml, .csv, .txt)
 │
-├── classes/                 # Class-related data
-│   └── Classes.txt         # Class information
+├── cases/                
+│   └── Classes.txt         # cases classes
 │
 ├── app.py                   # Main Streamlit application
 └── requirements.txt         # Project dependencies
 ```
-
-## Key Components
-
-1. **Main Application**
-   - `app.py`: The main Streamlit application entry point
-   - `requirements.txt`: Lists all project dependencies
-
-2. **Configuration**
-   - `.streamlit/`: Contains Streamlit-specific configuration files
-   - Configuration for both app settings and secure variables
-
-3. **Static Assets**
-   - `static/`: Houses styling and visual assets
-   - Custom CSS for application styling
-   - Project logo and other static resources
-
-4. **Data Processing**
-   - `testin/`: Contains various data processing utilities
-   - Multiple format converters (YAML, JSON, CSV, Text)
-   - Data analysis and structure validation tools
-
-5. **Class Data**
-   - `classes/`: Stores class-related information
-   - Contains raw and processed class data in various formats
 
 ## Getting Started
 
