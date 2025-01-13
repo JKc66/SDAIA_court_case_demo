@@ -1,6 +1,6 @@
 # Enjaz Streamlit Project
 
-A Streamlit-based web application for managing and displaying class/course information.
+A Streamlit-based web application for Enjaz Hackathon.
 
 ## Project Structure
 
