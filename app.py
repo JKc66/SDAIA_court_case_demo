@@ -268,6 +268,10 @@ def main():
     if st.session_state.history is None:
         st.session_state.history = []
     
+    # Add deletion tracking to session state initialization
+    if "deletion_triggered" not in st.session_state:
+        st.session_state.deletion_triggered = False
+    
     # Remove the periodic refresh and replace with event-based updates
     if "history_needs_refresh" not in st.session_state:
         st.session_state.history_needs_refresh = False
@@ -440,10 +444,7 @@ def main():
                 "main_classification": m_calss_example,
                 "sub_classification": s_calss_example,
                 "case_type": case_type_example,
-                "explanation": explanation,
-                "id": len(st.session_state.history),
-                "timestamp": time.time(),
-                "user_id": get_user_id()
+                "explanation": explanation
             }
 
             # Update history both in session state and file
@@ -596,88 +597,84 @@ def main():
                     st.session_state[f"item_visible_{i}"] = True
 
             def handle_delete(index):
-                st.session_state[f"item_visible_{index}"] = False
                 st.session_state.history.pop(index)
                 save_history(st.session_state.history)
                 st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
-                st.rerun()  # Force refresh after deletion
+                st.session_state.deletion_triggered = True
 
             # Reverse the history list for display
             visible_count = 0
-            for i, entry in enumerate(reversed(st.session_state.history)):
-                real_index = len(st.session_state.history) - 1 - i
+            for i, entry in enumerate(reversed(st.session_state.history[-5:])):  # Show only last 5 entries
+                if visible_count > 0:
+                    st.markdown("""
+                        <div class="custom-divider">
+                            <span>•••</span>
+                        </div>
+                    """, unsafe_allow_html=True)
+                visible_count += 1
 
-                if st.session_state.get(f"item_visible_{real_index}", True):
-                    if visible_count > 0:
-                        st.markdown("""
-                            <div class="custom-divider">
-                                <span>•••</span>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    visible_count += 1
+                with st.container():
+                    st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
+                    col_content, col_delete = st.columns([0.95, 0.05])
 
-                    with st.container():
-                        st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
-                        col_content, col_delete = st.columns([0.95, 0.05])
+                    with col_content:
+                        st.markdown(f"""
+                        <div class="case-text">
+                            <strong>البحث:</strong> {entry["input"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True)
 
-                        with col_content:
+                        if entry["explanation"]:
                             st.markdown(f"""
-                            <div class="case-text">
-                                <strong>البحث:</strong> {entry["input"]}
-                            </div>
-                            """,
-                            unsafe_allow_html=True)
-
-                            if entry["explanation"]:
-                                st.markdown(f"""
-                                    <div class="info-link-container">
-                                        <a href="#" class="info-link">
-                                            شرح اضافي
-                                            <span class="info-icon">i</span>
-                                        </a>
-                                        <div class="info-bubble">
-                                            {entry["explanation"]}
-                                        </div>
+                                <div class="info-link-container">
+                                    <a href="#" class="info-link">
+                                        شرح اضافي
+                                        <span class="info-icon">i</span>
+                                    </a>
+                                    <div class="info-bubble">
+                                        {entry["explanation"]}
                                     </div>
-                                """, unsafe_allow_html=True)
+                                </div>
+                            """, unsafe_allow_html=True)
 
-                        with col_delete:
-                            st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
-                            if st.button("🗑️", key=f"delete_{real_index}", on_click=handle_delete, args=(real_index,)):
-                                pass
-                            st.markdown('</div>', unsafe_allow_html=True)
+                    with col_delete:
+                        st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
+                        if st.button("🗑️", key=f"delete_{i}", on_click=handle_delete, args=(len(st.session_state.history) - 1 - i,)):
+                            pass
                         st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-                        # Classifications
-                        st.markdown(f"""
-                            <div class="classification-item main-classification">
-                                <div class="classification-label">
-                                    <span class="classification-icon">📊</span>
-                                    التصنيف الرئيسي
-                                </div>
-                                <div class="classification-value">{entry["main_classification"]}</div>
+                    # Classifications
+                    st.markdown(f"""
+                        <div class="classification-item main-classification">
+                            <div class="classification-label">
+                                <span class="classification-icon">📊</span>
+                                التصنيف الرئيسي
                             </div>
-                        """, unsafe_allow_html=True)
+                            <div class="classification-value">{entry["main_classification"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-                        st.markdown(f"""
-                            <div class="classification-item sub-classification">
-                                <div class="classification-label">
-                                    <span class="classification-icon">🔍</span>
-                                    التصنيف الفرعي
-                                </div>
-                                <div class="classification-value">{entry["sub_classification"]}</div>
+                    st.markdown(f"""
+                        <div class="classification-item sub-classification">
+                            <div class="classification-label">
+                                <span class="classification-icon">🔍</span>
+                                التصنيف الفرعي
                             </div>
-                        """, unsafe_allow_html=True)
+                            <div class="classification-value">{entry["sub_classification"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-                        st.markdown(f"""
-                            <div class="classification-item case-type">
-                                <div class="classification-label">
-                                    <span class="classification-icon">⚖️</span>
-                                    نوع الدعوى
-                                </div>
-                                <div class="classification-value">{entry["case_type"]}</div>
+                    st.markdown(f"""
+                        <div class="classification-item case-type">
+                            <div class="classification-label">
+                                <span class="classification-icon">⚖️</span>
+                                نوع الدعوى
                             </div>
-                        """, unsafe_allow_html=True)
+                            <div class="classification-value">{entry["case_type"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
             # Clear all history button
             def handle_clear_all():
@@ -686,7 +683,7 @@ def main():
                     save_history([])
                     st.toast("تم مسح السجل بالكامل", icon=notification_icon)
                     st.session_state.clear_triggered = True
-                    st.rerun()  # Force refresh after clearing
+                    st.session_state.deletion_triggered = True
 
             st.markdown('<div class="clear-all-button-container">', unsafe_allow_html=True)
             if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
@@ -694,6 +691,11 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with tab2:
+            # Check if deletion was triggered and rerun if needed
+            if st.session_state.deletion_triggered:
+                st.session_state.deletion_triggered = False
+                st.rerun()
+                
             # Display history in table format using the display DataFrame
             st.markdown("""
                 <style>
