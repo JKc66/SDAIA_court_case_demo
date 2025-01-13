@@ -49,6 +49,19 @@ def write_detailed_structure(file, structure_details):
             file.write(f"│   ├── Subcategory: {sub_name}\n")
             file.write(f"│   │   └── Number of types: {type_count}\n")
 
+def print_all_types(data, file):
+    file.write("\nComplete List of All Types:\n")
+    file.write("=" * 50 + "\n")
+    
+    for main_category, main_data in data.items():
+        file.write(f"\nMain Category: {main_category}\n")
+        if 'subcategories' in main_data:
+            for sub_name, sub_data in main_data['subcategories'].items():
+                file.write(f"├── Subcategory: {sub_name}\n")
+                if 'types' in sub_data:
+                    for type_item in sub_data['types']:
+                        file.write(f"│   └── Type: {type_item}\n")
+
 def main():
     # Get the directory where the script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -69,6 +82,7 @@ def main():
         f.write(f"Types: {yaml_types}\n")
         
         write_detailed_structure(f, yaml_structure)
+        print_all_types(yaml_data, f)
         
         # Analyze JSON file
         json_data = read_json_file('details.json')
@@ -81,6 +95,7 @@ def main():
         f.write(f"Types: {json_types}\n")
         
         write_detailed_structure(f, json_structure)
+        print_all_types(json_data, f)
         
         print(f"Analysis has been written to {output_file}")
 

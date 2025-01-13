@@ -361,7 +361,19 @@ def main():
     # Results section
     with col_results:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
-        st.markdown("## ⚡ نتائج التصنيف")
+        
+        # Create header with conditional response time
+        if st.session_state.current_results:
+            st.markdown(f"""
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="margin: 0;">⚡ نتائج التصنيف</h2>
+                    <div style="display: flex; align-items: center; color: #666; font-size: 0.9em;">
+                        <span>⏱️ {st.session_state.current_results.get("duration", "-")} ثانية</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("<h2>⚡ نتائج التصنيف</h2>", unsafe_allow_html=True)
 
         if st.session_state.loading:
             st.markdown("""
@@ -409,7 +421,8 @@ def main():
                 "main_classification": m_calss_example,
                 "sub_classification": s_calss_example,
                 "case_type": case_type_example,
-                "explanation": explanation
+                "explanation": explanation,
+                "duration": f"{duration:.2f}"  # Add duration to stored results
             }
 
             # Update history both in session state and file
@@ -641,6 +654,29 @@ def main():
                             <div class="classification-value">{entry["case_type"]}</div>
                         </div>
                     """, unsafe_allow_html=True)
+
+                    st.markdown(f"""
+                        <div class="classification-item response-time">
+                            <div class="classification-label">
+                                <span class="classification-icon">⏱️</span>
+                                زمن الاستجابة
+                            </div>
+                            <div class="classification-value">{entry.get("duration", "-")} ثانية</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    if entry["explanation"]:
+                        st.markdown(f"""
+                            <div class="info-link-container">
+                                <a href="#" class="info-link">
+                                    شرح اضافي
+                                    <span class="info-icon">i</span>
+                                </a>
+                                <div class="info-bubble">
+                                    {entry["explanation"]}
+                                </div>
+                            </div>
+                        """, unsafe_allow_html=True)
 
             # Clear all history button
             def handle_clear_all():

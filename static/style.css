@@ -153,8 +153,8 @@ header {
     text-align: right;
     margin-bottom: 0;
     font-family: 'Amiri', serif !important;
-    font-size: 1.2em !important;
-    line-height: 1.6 !important;
+    font-size: 1.5em !important;
+    line-height: 1.8 !important;
     padding: 1rem !important;
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     box-shadow: 0 4px 15px rgba(28, 53, 94, 0.1);
@@ -163,7 +163,7 @@ header {
 
 .stTextArea textarea::placeholder {
     font-family: 'Amiri', serif !important;
-    font-size: 1.2em !important;
+    font-size: 1.5em !important;
     color: #6b7280 !important;
 }
 
