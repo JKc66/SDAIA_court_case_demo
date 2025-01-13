@@ -11,7 +11,6 @@ import pandas as pd
 import io
 import openpyxl
 import uuid
-from contextlib import contextmanager
 import sqlite3
 
 NUM_KEYS = 1
@@ -85,65 +84,11 @@ def clear_history_db():
     c.execute('DELETE FROM classifications')
     conn.commit()
 
-# Remove old file-based functions since we're using SQLite now
-
-@contextmanager
-def file_lock(file_path):
-    """Simple file handling context manager for cloud environment."""
-    try:
-        with open(file_path, 'r+' if os.path.exists(file_path) else 'w+') as f:
-            yield f
-    except IOError as e:
-        st.error(f"Error accessing history file: {e}")
-        yield None
-
 def get_user_id():
     """Get or create a unique user ID for the current session."""
     if 'user_id' not in st.session_state:
         st.session_state.user_id = str(uuid.uuid4())
     return st.session_state.user_id
-
-def validate_json(content):
-    """Validate JSON content."""
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        return None
-
-def load_history():
-    """Load classification history from JSON file with robust error handling."""
-    history_file = Path("history.json")
-    
-    try:
-        if history_file.exists():
-            with open(history_file, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                if content:
-                    data = validate_json(content)
-                    if data is not None:
-                        # Ensure all entries have IDs
-                        for entry in data:
-                            if 'id' not in entry:
-                                entry['id'] = str(uuid.uuid4())
-                        return data
-        
-        # If file doesn't exist or is invalid, start fresh
-        return []
-        
-    except Exception as e:
-        st.error(f"Error loading history: {e}")
-        return []
-
-def save_history(history):
-    """Save classification history to JSON file."""
-    history_file = Path("history.json")
-    try:
-        # Write directly to the file
-        with open(history_file, 'w', encoding='utf-8') as f:
-            json.dump(history, f, ensure_ascii=False, indent=4)
-            
-    except Exception as e:
-        st.error(f"Error saving history: {e}")
 
 #------------------------------------------------------------------------------
 # PAGE CONFIGURATION
@@ -289,19 +234,15 @@ def initialize_gemini(key_id):
 # MAIN APPLICATION
 #------------------------------------------------------------------------------
 def main():
-    # Initialize history at startup
+    # Initialize history from database at startup
     if 'history' not in st.session_state:
         st.session_state.history = load_history_from_db()
-    
-    # Ensure history is never None
-    if st.session_state.history is None:
-        st.session_state.history = []
     
     # Add deletion tracking to session state initialization
     if "deletion_triggered" not in st.session_state:
         st.session_state.deletion_triggered = False
     
-    # Remove the periodic refresh and replace with event-based updates
+    # Event-based history updates
     if "history_needs_refresh" not in st.session_state:
         st.session_state.history_needs_refresh = False
     
@@ -479,6 +420,7 @@ def main():
                 case_type_example = data['type']
                 explanation = data.get('explanation', '-')
 
+            # Save new entry to database
             new_entry = {
                 "id": str(uuid.uuid4()),
                 "input": user_input,
@@ -489,7 +431,6 @@ def main():
                 "duration": f"{duration:.2f}"
             }
 
-            # Save to database instead of JSON
             save_to_db(new_entry)
             st.session_state.history = load_history_from_db()
             st.session_state.current_results = new_entry
@@ -609,11 +550,12 @@ def main():
             )
 
         with col2:
+            # Convert history to JSON for download
             json_str = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
             st.download_button(
                 label="⬇️ تحميل سجل التصنيفات (JSON)",
                 data=json_str,
-                file_name="history.json",
+                file_name="export.json",
                 mime="application/json",
                 use_container_width=True
             )

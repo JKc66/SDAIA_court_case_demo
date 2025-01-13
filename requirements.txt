@@ -3,4 +3,3 @@ google-generativeai
 pandas
 openpyxl
 PyYAML
-sqlite3
