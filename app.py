@@ -657,19 +657,6 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-                    if entry["explanation"]:
-                        st.markdown(f"""
-                            <div class="info-link-container">
-                                <a href="#" class="info-link">
-                                    شرح اضافي
-                                    <span class="info-icon">i</span>
-                                </a>
-                                <div class="info-bubble">
-                                    {entry["explanation"]}
-                                </div>
-                            </div>
-                        """, unsafe_allow_html=True)
-
             def handle_clear_all():
                 if not st.session_state.get('clear_triggered'):
                     clear_history_db()
