@@ -12,8 +12,80 @@ import io
 import openpyxl
 import uuid
 from contextlib import contextmanager
+import sqlite3
 
 NUM_KEYS = 1
+
+def init_db():
+    """Initialize SQLite database and create tables if they don't exist."""
+    conn = sqlite3.connect('history.db', check_same_thread=False)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS classifications (
+            id TEXT PRIMARY KEY,
+            input_text TEXT NOT NULL,
+            main_classification TEXT NOT NULL,
+            sub_classification TEXT NOT NULL,
+            case_type TEXT NOT NULL,
+            explanation TEXT,
+            duration TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    return conn
+
+def get_db():
+    """Get database connection, creating it if necessary."""
+    if 'db_conn' not in st.session_state:
+        st.session_state.db_conn = init_db()
+    return st.session_state.db_conn
+
+def load_history_from_db():
+    """Load classification history from SQLite database."""
+    conn = get_db()
+    df = pd.read_sql_query(
+        'SELECT * FROM classifications ORDER BY created_at DESC',
+        conn
+    )
+    if df.empty:
+        return []
+    return df.to_dict('records')
+
+def save_to_db(entry):
+    """Save a single classification entry to the database."""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO classifications 
+        (id, input_text, main_classification, sub_classification, case_type, explanation, duration)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        entry['id'],
+        entry['input'],
+        entry['main_classification'],
+        entry['sub_classification'],
+        entry['case_type'],
+        entry['explanation'],
+        entry['duration']
+    ))
+    conn.commit()
+
+def delete_from_db(entry_id):
+    """Delete a single entry from the database."""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('DELETE FROM classifications WHERE id = ?', (entry_id,))
+    conn.commit()
+
+def clear_history_db():
+    """Clear all history from the database."""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('DELETE FROM classifications')
+    conn.commit()
+
+# Remove old file-based functions since we're using SQLite now
 
 @contextmanager
 def file_lock(file_path):
@@ -219,7 +291,7 @@ def initialize_gemini(key_id):
 def main():
     # Initialize history at startup
     if 'history' not in st.session_state:
-        st.session_state.history = load_history()
+        st.session_state.history = load_history_from_db()
     
     # Ensure history is never None
     if st.session_state.history is None:
@@ -234,7 +306,7 @@ def main():
         st.session_state.history_needs_refresh = False
     
     if st.session_state.history_needs_refresh:
-        st.session_state.history = load_history()
+        st.session_state.history = load_history_from_db()
         st.session_state.history_needs_refresh = False
 
     # Add new session state for delete operations
@@ -344,16 +416,12 @@ def main():
         with col2:
             def handle_new_case():
                 """Handle new case while preserving history."""
-                # Only reset current case related states
                 st.session_state.case_submitted = False
                 st.session_state.current_results = None
                 st.session_state.loading = False
-                # Clear only the input field
                 if "rtl_input" in st.session_state:
                     st.session_state.rtl_input = ""
-                # Ensure history is loaded
-                if 'history' not in st.session_state:
-                    st.session_state.history = load_history()
+                st.session_state.history = load_history_from_db()
 
             if st.button("🔄 حالة جديدة", type="secondary", on_click=handle_new_case):
                 pass
@@ -362,7 +430,6 @@ def main():
     with col_results:
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         
-        # Create header with conditional response time
         if st.session_state.current_results:
             st.markdown(f"""
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -385,17 +452,15 @@ def main():
 
             with st.spinner(''):
                 print("Sending message to Gemini...")
-                start_time = time.time()  # Start timing
+                start_time = time.time()
                 response = st.session_state.chat_session.send_message(user_input)
-                end_time = time.time()  # End timing
+                end_time = time.time()
                 duration = end_time - start_time
                 print(f"Gemini API response took {duration:.2f} seconds")
                 try:
                     data = json.loads(response.text)
-                    # Handle list response by taking first item
                     if isinstance(data, list) and len(data) > 0:
                         data = data[0]
-                    # Validate that we have a dictionary with required keys
                     if not isinstance(data, dict) or not all(key in data for key in ['category', 'subcategory', 'type']):
                         print(f"Invalid response structure: {data}")
                         data = False
@@ -403,7 +468,6 @@ def main():
                     print(f"Error decoding JSON: {e}")
                     data = False
 
-            # After progress
             if data == False:
                 m_calss_example = "-"
                 s_calss_example = "-"
@@ -413,7 +477,7 @@ def main():
                 m_calss_example = data['category']
                 s_calss_example = data['subcategory']
                 case_type_example = data['type']
-                explanation = data.get('explanation', '-')  # Handle cases where explanation might be missing
+                explanation = data.get('explanation', '-')
 
             new_entry = {
                 "id": str(uuid.uuid4()),
@@ -422,16 +486,16 @@ def main():
                 "sub_classification": s_calss_example,
                 "case_type": case_type_example,
                 "explanation": explanation,
-                "duration": f"{duration:.2f}"  # Add duration to stored results
+                "duration": f"{duration:.2f}"
             }
 
-            # Update history both in session state and file
-            st.session_state.history.append(new_entry)
-            save_history(st.session_state.history)
+            # Save to database instead of JSON
+            save_to_db(new_entry)
+            st.session_state.history = load_history_from_db()
             st.session_state.current_results = new_entry
             st.session_state.case_submitted = True
             st.session_state.loading = False
-            st.rerun()  # Force refresh to show new entry
+            st.rerun()
 
         elif st.session_state.current_results:
             latest_entry = st.session_state.current_results
@@ -498,12 +562,12 @@ def main():
     if st.session_state.history:
         # Convert history to DataFrame for display
         df_display = pd.DataFrame(st.session_state.history)
-        df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input', 'explanation']]
+        df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input_text', 'explanation']]
         df_display.columns = ['نوع الدعوى', 'التصنيف الفرعي', 'التصنيف الرئيسي', 'نص الدعوى', 'شرح']
 
         # Create a different DataFrame for download with original order
         df_download = pd.DataFrame(st.session_state.history)
-        df_download = df_download[['input', 'main_classification', 'sub_classification', 'case_type', 'explanation']]
+        df_download = df_download[['input_text', 'main_classification', 'sub_classification', 'case_type', 'explanation']]
         df_download.columns = ['نص الدعوى', 'التصنيف الرئيسي', 'التصنيف الفرعي', 'نوع الدعوى', 'شرح']
 
         # Create Excel file in memory
@@ -512,11 +576,8 @@ def main():
             df_download.to_excel(writer, index=False, sheet_name='Sheet1')
 
             worksheet = writer.sheets['Sheet1']
-
-            # Set RTL direction
             worksheet.sheet_view.rightToLeft = True
 
-            # Auto-fit columns
             for column in worksheet.columns:
                 max_length = 0
                 column = [cell for cell in column]
@@ -529,19 +590,15 @@ def main():
                 adjusted_width = (max_length + 2)
                 worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
-            # Set font for better Arabic display
             for row in worksheet.rows:
                 for cell in row:
                     cell.font = openpyxl.styles.Font(name='Arial', size=11)
                     cell.alignment = openpyxl.styles.Alignment(horizontal='right', vertical='center', wrap_text=True)
 
-        # Create download button with custom styling
         excel_data = output.getvalue()
 
-        # Create columns for download buttons
         col1, col2 = st.columns(2)
 
-        # Excel download in first column
         with col1:
             st.download_button(
                 label="⬇️ تحميل سجل التصنيفات (Excel)",
@@ -551,7 +608,6 @@ def main():
                 use_container_width=True
             )
 
-        # JSON download in second column
         with col2:
             json_str = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
             st.download_button(
@@ -562,28 +618,23 @@ def main():
                 use_container_width=True
             )
 
-        # Create tabs for different views
         tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
 
         with tab1:
-            # Display history in detailed view
             notification_icon = "✅"
 
-            # Initialize visibility states for each history item
             for i in range(len(st.session_state.history)):
                 if f"item_visible_{i}" not in st.session_state:
                     st.session_state[f"item_visible_{i}"] = True
 
             def handle_delete(entry_id):
-                # Find and remove entry by ID
-                st.session_state.history = [entry for entry in st.session_state.history if entry['id'] != entry_id]
-                save_history(st.session_state.history)
+                delete_from_db(entry_id)
+                st.session_state.history = load_history_from_db()
                 st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
                 st.session_state.deletion_triggered = True
 
-            # Reverse the history list for display
             visible_count = 0
-            for i, entry in enumerate(reversed(st.session_state.history[-5:])):  # Show only last 5 entries
+            for i, entry in enumerate(st.session_state.history[:5]):  # Show only last 5 entries
                 if visible_count > 0:
                     st.markdown("""
                         <div class="custom-divider">
@@ -599,7 +650,7 @@ def main():
                     with col_content:
                         st.markdown(f"""
                         <div class="case-text">
-                            <strong>البحث:</strong> {entry["input"]}
+                            <strong>البحث:</strong> {entry["input_text"]}
                         </div>
                         """,
                         unsafe_allow_html=True)
@@ -624,7 +675,6 @@ def main():
                         st.markdown('</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
 
-                    # Classifications
                     st.markdown(f"""
                         <div class="classification-item main-classification">
                             <div class="classification-label">
@@ -678,11 +728,10 @@ def main():
                             </div>
                         """, unsafe_allow_html=True)
 
-            # Clear all history button
             def handle_clear_all():
                 if not st.session_state.get('clear_triggered'):
+                    clear_history_db()
                     st.session_state.history = []
-                    save_history([])
                     st.toast("تم مسح السجل بالكامل", icon=notification_icon)
                     st.session_state.clear_triggered = True
                     st.session_state.deletion_triggered = True
@@ -693,12 +742,10 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with tab2:
-            # Check if deletion was triggered and rerun if needed
             if st.session_state.deletion_triggered:
                 st.session_state.deletion_triggered = False
                 st.rerun()
                 
-            # Display history in table format using the display DataFrame
             st.markdown("""
                 <style>
                     .stDataFrame {
