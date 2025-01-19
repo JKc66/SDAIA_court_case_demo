@@ -204,7 +204,7 @@ def initialize_gemini(key_id):
 
         # Upload and process the categories file
         files = [
-            upload_to_gemini(Path("classes") / "Classes.txt", mime_type="text/plain"),
+            upload_to_gemini(Path("Data") / "Classes.txt", mime_type="text/plain"),
         ]
 
         # Check if file upload was successful
@@ -269,7 +269,7 @@ def main():
         st.session_state.case_submitted = False
     if "loading" not in st.session_state:
         st.session_state.loading = False
-    if "current_results" not in st.session_state:
+    if "current_results" not in st.session_state: 
         st.session_state.current_results = None
     if "progress" not in st.session_state:
         st.session_state.progress = None

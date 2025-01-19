@@ -21,7 +21,7 @@ A Streamlit-based web application for Enjaz Hackathon.
 │   ├── analyze_structure.py           # Data structure analysis
 │   └── various data files (.json, .yaml, .csv, .txt)
 │
-├── cases/                
+├── Data/                
 │   └── Classes.txt         # cases classes
 │
 ├── app.py                   # Main Streamlit application
