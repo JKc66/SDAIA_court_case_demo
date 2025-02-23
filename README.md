@@ -27,23 +27,3 @@ A Streamlit-based web application for Enjaz Hackathon.
 ├── app.py                   # Main Streamlit application
 └── requirements.txt         # Project dependencies
 ```
-
-## Getting Started
-
-1. Set up Gemini API:
-   - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Create or edit `.streamlit/secrets.toml`
-   - Add your API key:
-     ```toml
-     GOOGLE_API_KEY = "your-api-key-here"
-     ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the application:
-   ```bash
-   streamlit run app.py
-   ``` 
