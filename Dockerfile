@@ -13,19 +13,25 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv package installer
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install Python dependencies using uv
+RUN uv pip install --system --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
 
 # Expose Streamlit port
 EXPOSE 8502
+
+HEALTHCHECK CMD curl --fail http://localhost:8502/_stcore/health
 
 # Define the entrypoint to run the Streamlit app
 ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
