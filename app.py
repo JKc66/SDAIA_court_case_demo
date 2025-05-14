@@ -4,7 +4,8 @@ import base64
 from pathlib import Path
 import time
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from random import randint
 import datetime
 import pandas as pd
@@ -131,7 +132,7 @@ def get_base64_logo(filename):
 # Gemini Communication
 #------------------------------------------------------------------------------
 
-def upload_to_gemini(path, mime_type=None):
+def upload_to_gemini(client, path, mime_type=None):
     """Uploads the given file to Gemini."""
     try:
         # Resolve the file path relative to the app directory
@@ -139,29 +140,33 @@ def upload_to_gemini(path, mime_type=None):
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {path}")
 
-        file = genai.upload_file(str(file_path), mime_type=mime_type)
-        print(f"Uploaded file '{file.display_name}' as: {file.uri}")
-        return file
+        file_obj = client.files.upload(
+            file=str(file_path),
+            mime_type=mime_type,
+            display_name=file_path.name
+        )
+        print(f"Uploaded file '{file_obj.display_name}' as: {file_obj.uri}")
+        return file_obj
     except Exception as e:
         st.error(f"Failed to upload file: {e}")
         return None
 
-def wait_for_files_active(files):
+def wait_for_files_active(client, files_list):
     """Waits for the given files to be active."""
     print("Waiting for file processing...")
     try:
-        for file in files:
-            if file is None:
+        for file_obj in files_list:
+            if file_obj is None:
                 raise Exception("Invalid file object")
 
-            name = file.name
-            file = genai.get_file(name)
-            while file.state.name == "PROCESSING":
+            name = file_obj.name
+            retrieved_file = client.files.get(name=name)
+            while retrieved_file.state.name == "PROCESSING":
                 print(".", end="", flush=True)
-                time.sleep(10)
-                file = genai.get_file(name)
-            if file.state.name != "ACTIVE":
-                raise Exception(f"File {file.name} failed to process")
+                time.sleep(5)
+                retrieved_file = client.files.get(name=name)
+            if retrieved_file.state.name != "ACTIVE":
+                raise Exception(f"File {retrieved_file.name} failed to process")
         print("...all files ready")
         print()
     except Exception as e:
@@ -178,10 +183,9 @@ def initialize_gemini(key_id):
             st.error(f"API key {key_id} not found. Please check your configuration.")
             return None
 
-        genai.configure(api_key=api_key)
+        client = genai.Client(api_key=api_key)
 
-        # Create the model
-        generation_config = {
+        generation_config_dict = {
             "temperature": 0,
             "top_p": 0.95,
             "top_k": 40,
@@ -189,41 +193,43 @@ def initialize_gemini(key_id):
             "response_mime_type": "application/json",
         }
 
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-exp",
-            generation_config=generation_config,
-            system_instruction=(
-                "according to the categories mentinoed. which category does the provided text fit in the most? "
-                "what is the most appropriate subcategory? and what is the most appropriate type? "
-                "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
-                "the output should be in arabic. make the a json object. "
-                "the keys are: category, subcategory, type, explanation. "
-                "if none of the types fit the case at all, return 'لا يوجد' for the type."
-            )
+        system_instruction_text = (
+            "according to the categories mentinoed. which category does the provided text fit in the most? "
+            "what is the most appropriate subcategory? and what is the most appropriate type? "
+            "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
+            "the output should be in arabic. make the a json object. "
+            "the keys are: category, subcategory, type, explanation. "
+            "if none of the types fit the case at all, return 'لا يوجد' for the type."
         )
+        
+        model_name = "gemini-2.5-flash-preview-04-17"
 
-        # Upload and process the categories file
-        files = [
-            upload_to_gemini(Path("Data") / "Classes.txt", mime_type="text/plain"),
+        files_to_upload = [
+            upload_to_gemini(client, Path("Data") / "Classes.txt", mime_type="text/plain"),
         ]
 
-        # Check if file upload was successful
-        if None in files:
+        if None in files_to_upload:
             raise Exception("Failed to upload required files")
 
-        # Wait for files to be processed
-        if not wait_for_files_active(files):
+        if not wait_for_files_active(client, files_to_upload):
             raise Exception("File processing failed")
 
-        chat_session = model.start_chat(
-            history=[
-                {
-                    "role": "user",
-                    "parts": [
-                        files[0],
-                    ],
-                },
-            ]
+        chat_config = types.ChatCreateConfig(
+            generation_config=generation_config_dict,
+            system_instruction=system_instruction_text
+        )
+        
+        initial_history = []
+        if files_to_upload and files_to_upload[0] is not None:
+            initial_history.append({
+                "role": "user",
+                "parts": [files_to_upload[0]],
+            })
+
+        chat_session = client.chats.create(
+            model=model_name,
+            history=initial_history if initial_history else None,
+            config=chat_config
         )
         return chat_session
     except Exception as e:
@@ -394,7 +400,7 @@ def main():
             with st.spinner(''):
                 print("Sending message to Gemini...")
                 start_time = time.time()
-                response = st.session_state.chat_session.send_message(user_input)
+                response = st.session_state.chat_session.send_message(message=user_input)
                 end_time = time.time()
                 duration = end_time - start_time
                 print(f"Gemini API response took {duration:.2f} seconds")

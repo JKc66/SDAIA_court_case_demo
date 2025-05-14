@@ -4,7 +4,7 @@ FROM python:3.12-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    STREAMLIT_SERVER_PORT=8502 \
+    STREAMLIT_SERVER_PORT=8503 \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
 # Set working directory
@@ -29,9 +29,9 @@ RUN uv pip install --system --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose Streamlit port
-EXPOSE 8502
+EXPOSE 8503
 
-HEALTHCHECK CMD curl --fail http://localhost:8502/_stcore/health
+HEALTHCHECK CMD curl --fail http://localhost:8503/_stcore/health
 
 # Define the entrypoint to run the Streamlit app
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8502", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8503", "--server.address=0.0.0.0"]
