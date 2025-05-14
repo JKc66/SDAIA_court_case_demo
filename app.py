@@ -141,11 +141,10 @@ def upload_to_gemini(client, path, mime_type=None):
             raise FileNotFoundError(f"File not found: {path}")
 
         file_obj = client.files.upload(
-            file=str(file_path),
-            mime_type=mime_type,
-            display_name=file_path.name
+            file=str(file_path)
         )
-        print(f"Uploaded file '{file_obj.display_name}' as: {file_obj.uri}")
+        uploaded_file_name = getattr(file_obj, 'display_name', getattr(file_obj, 'name', file_path.name))
+        print(f"Uploaded file '{uploaded_file_name}' as: {file_obj.uri}")
         return file_obj
     except Exception as e:
         st.error(f"Failed to upload file: {e}")
@@ -214,8 +213,12 @@ def initialize_gemini(key_id):
         if not wait_for_files_active(client, files_to_upload):
             raise Exception("File processing failed")
 
-        chat_config = types.ChatCreateConfig(
-            generation_config=generation_config_dict,
+        chat_generation_config = types.GenerateContentConfig(
+            temperature=generation_config_dict["temperature"],
+            top_p=generation_config_dict["top_p"],
+            top_k=generation_config_dict["top_k"],
+            max_output_tokens=generation_config_dict["max_output_tokens"],
+            response_mime_type=generation_config_dict["response_mime_type"],
             system_instruction=system_instruction_text
         )
         
@@ -229,7 +232,7 @@ def initialize_gemini(key_id):
         chat_session = client.chats.create(
             model=model_name,
             history=initial_history if initial_history else None,
-            config=chat_config
+            config=chat_generation_config
         )
         return chat_session
     except Exception as e:
