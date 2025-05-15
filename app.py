@@ -9,12 +9,86 @@ from google.genai import types
 from random import randint
 import datetime
 import pandas as pd
-import io
-import openpyxl
 import uuid
 import sqlite3
+import traceback # Added for more detailed error logging
 
 NUM_KEYS = 1
+
+# --- File Caching Helper Functions ---
+FILE_CACHE_PATH = Path(__file__).parent / 'file_cache.json'
+
+def load_file_cache():
+    """Load the file cache from JSON."""
+    if not FILE_CACHE_PATH.exists():
+        return {}
+    try:
+        with open(FILE_CACHE_PATH, 'r') as f:
+            # Handle empty file case
+            content = f.read()
+            if not content:
+                return {}
+            return json.loads(content)
+    except json.JSONDecodeError: # Handle corrupted cache file
+        print("Error decoding file_cache.json, returning empty cache.")
+        return {}
+    except FileNotFoundError: # Should be caught by .exists() but as a safeguard
+        return {}
+
+def save_file_cache(cache):
+    """Save the file cache to JSON."""
+    with open(FILE_CACHE_PATH, 'w') as f:
+        json.dump(cache, f, indent=4)
+
+def calculate_file_size(file_path: Path):
+    """Calculate file size in bytes."""
+    return file_path.stat().st_size
+
+def wait_for_single_file_active(client, file_obj, max_attempts=12, delay=5): # Increased attempts slightly
+    """Wait for a single file to become active, with timeout."""
+    current_file = file_obj
+    print(f"Waiting for file {getattr(current_file, 'name', 'N/A')} to become active...")
+    for attempt in range(max_attempts):
+        # Ensure current_file is the most up-to-date object
+        try:
+            # It's crucial to get the latest status of the file object by its name
+            refreshed_file = client.files.get(name=current_file.name)
+        except Exception as e:
+            st.error(f"Error refreshing file status for {current_file.name}: {e}")
+            print(f"Error refreshing file status for {current_file.name}: {e}")
+            # Depending on the error, might want to retry or raise
+            if attempt < max_attempts -1: # if not the last attempt
+                time.sleep(delay)
+                continue
+            raise Exception(f"Could not refresh file status for {current_file.name} after an error: {e}")
+
+
+        file_state_name = getattr(getattr(refreshed_file, 'state', None), 'name', None)
+
+        if file_state_name == "ACTIVE":
+            print(f"File {refreshed_file.name} is ACTIVE.")
+            return True # Return the refreshed, active file object
+        elif file_state_name == "PROCESSING":
+            print(f". (Attempt {attempt + 1}/{max_attempts} for {refreshed_file.name})", end="", flush=True)
+            time.sleep(delay)
+            current_file = refreshed_file # Continue with the refreshed object
+            continue
+        else:
+            error_message = f"File {refreshed_file.name} failed to process or has an unexpected state."
+            if file_state_name:
+                error_message += f" State: {file_state_name}"
+            else:
+                error_message += f" Current file object state unknown: {refreshed_file}"
+            st.error(error_message)
+            print(error_message)
+            raise Exception(error_message)
+            
+    final_file_state = getattr(getattr(client.files.get(name=current_file.name), 'state', None), 'name', 'UNKNOWN')
+    timeout_message = f"Timeout waiting for file {current_file.name} (last known state: {final_file_state}) to become active after {max_attempts} attempts."
+    st.error(timeout_message)
+    print(timeout_message)
+    raise Exception(timeout_message)
+# --- End File Caching Helper Functions ---
 
 def init_db():
     """Initialize SQLite database and create tables if they don't exist."""
@@ -132,22 +206,93 @@ def get_base64_logo(filename):
 # Gemini Communication
 #------------------------------------------------------------------------------
 
-def upload_to_gemini(client, path, mime_type=None):
-    """Uploads the given file to Gemini."""
+def upload_to_gemini(client, path: Path, mime_type: str | None = None):
+    """Upload file with checking for existing files based on size and state."""
     try:
-        # Resolve the file path relative to the app directory
         file_path = Path(__file__).parent / path
         if not file_path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
+            st.error(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-        file_obj = client.files.upload(
-            file=str(file_path)
+        file_size = calculate_file_size(file_path)
+        cache = load_file_cache()
+
+        # Check cache first
+        # Use a combination of path and size for a more robust cache key, or just size if path can change but content is same
+        # For this use case, Classes.txt path is fixed, so path+size is good.
+        # However, the example used file_size as key. Let's stick to file_size for now but add original_path check.
+        
+        cached_entry_key = str(file_size) # Or a hash of content if sizes can collide often for different files
+        
+        if cached_entry_key in cache:
+            cached_file_info = cache[cached_entry_key]
+            # Verify if the cached entry is for the same original file path
+            if cached_file_info.get('original_path') == str(file_path):
+                cached_file_id = cached_file_info['file_id']
+                try:
+                    print(f"Cache hit for {file_path} (size: {file_size}), checking status of {cached_file_id}...")
+                    existing_file = client.files.get(name=cached_file_id)
+                    if existing_file.state.name == 'ACTIVE' and getattr(existing_file, 'size_bytes', -1) == file_size:
+                        print(f"Using cached and active file: {existing_file.name} ({existing_file.uri})")
+                        return existing_file
+                    else:
+                        print(f"Cached file {cached_file_id} (for {file_path}) is not active or size mismatch. State: {existing_file.state.name}, API Size: {getattr(existing_file, 'size_bytes', -1)}, Expected Size: {file_size}")
+                except Exception as e: 
+                    print(f"Error checking cached file {cached_file_id} for {file_path}: {e}. Will try to find by size or re-upload.")
+            else:
+                print(f"Cache entry for size {file_size} exists, but original path mismatch. Cached: {cached_file_info.get('original_path')}, Current: {str(file_path)}")
+
+
+        print(f"Checking existing files on API for {file_path} (size: {file_size})...")
+        try:
+            existing_files_list = client.files.list() 
+            for file_on_api in existing_files_list:
+                if file_on_api.state.name == 'ACTIVE' and getattr(file_on_api, 'size_bytes', -1) == file_size:
+                    # Heuristic: if an active file of the same size exists, assume it's the one.
+                    # This could be problematic if multiple distinct files have the exact same size.
+                    # For Classes.txt, this risk is lower.
+                    print(f"Found matching active file on API by size: {file_on_api.name} ({file_on_api.uri}) for {file_path}")
+                    cache[cached_entry_key] = {
+                        'file_id': file_on_api.name,
+                        'file_uri': file_on_api.uri,
+                        'mime_type': getattr(file_on_api, 'mime_type', mime_type or 'text/plain'),
+                        'original_path': str(file_path)
+                    }
+                    save_file_cache(cache)
+                    return file_on_api
+        except Exception as e:
+            st.error(f"Error listing files from API: {e}")
+            print(f"Error listing files from API: {e}")
+            # Decide if to proceed with upload or raise
+
+        print(f"No suitable existing file found for {file_path}. Uploading anew...")
+        uploaded_file_obj = client.files.upload(
+            file=file_path, # Pass Path object directly
+            display_name=file_path.name # Good practice to set display name
         )
-        uploaded_file_name = getattr(file_obj, 'display_name', getattr(file_obj, 'name', file_path.name))
-        print(f"Uploaded file '{uploaded_file_name}' as: {file_obj.uri}")
-        return file_obj
+        print(f"Uploaded '{file_path.name}' as {uploaded_file_obj.name}, waiting for it to become active...")
+        
+        if not wait_for_single_file_active(client, uploaded_file_obj):
+             raise Exception(f"Uploaded file {uploaded_file_obj.name} did not become active.")
+
+        # Refresh file object to get all attributes like size_bytes and mime_type after activation
+        final_file_obj = client.files.get(name=uploaded_file_obj.name)
+
+        print(f"File {final_file_obj.name} is active. URI: {final_file_obj.uri}, Size: {getattr(final_file_obj, 'size_bytes', 'N/A')}, MimeType: {getattr(final_file_obj, 'mime_type', 'N/A')}")
+        
+        cache[cached_entry_key] = {
+            'file_id': final_file_obj.name,
+            'file_uri': final_file_obj.uri,
+            'mime_type': getattr(final_file_obj, 'mime_type', mime_type or 'text/plain'),
+            'original_path': str(file_path)
+        }
+        save_file_cache(cache)
+        
+        return final_file_obj
     except Exception as e:
-        st.error(f"Failed to upload file: {e}")
+        st.error(f"Failed during file handling for {path}: {e}")
+        print(f"Error in upload_to_gemini for {path}: {e}") 
+        traceback.print_exc()
         return None
 
 def wait_for_files_active(client, files_list):
@@ -176,68 +321,66 @@ def wait_for_files_active(client, files_list):
 @st.cache_resource(ttl=datetime.timedelta(days=2), show_spinner=False)
 def initialize_gemini(key_id):
     try:
-        # Verify if the API key exists
         api_key = os.environ.get(f"GEMINI_API_KEY_{key_id}")
         if not api_key:
             st.error(f"API key {key_id} not found. Please check your configuration.")
-            return None
+            return None, None, None, None # client, model_name, config, file_obj
 
         client = genai.Client(api_key=api_key)
 
-        generation_config_dict = {
-            "temperature": 0,
-            "top_p": 0.95,
-            "top_k": 40,
-            "max_output_tokens": 8192,
-            "response_mime_type": "application/json",
-        }
+        system_instruction_text = """
+You are an expert legal text classifier. Your primary function is to analyze the provided input text and classify it according to a strict, predefined hierarchical structure.
+This classification scheme (categories, subcategories, and types) is **exclusively defined** in the content of the 'Classes.txt' file provided to you.
 
-        system_instruction_text = (
-            "according to the categories mentinoed. which category does the provided text fit in the most? "
-            "what is the most appropriate subcategory? and what is the most appropriate type? "
-            "you must use a category, subcategory, and type from the file only, choose from them what fits the case the most. "
-            "the output should be in arabic. make the a json object. "
-            "the keys are: category, subcategory, type, explanation. "
-            "if none of the types fit the case at all, return 'لا يوجد' for the type."
-        )
+**Critical Instructions:**
+*   **Strict Adherence:** You MUST select classifications *only* from the options listed in 'Classes.txt'. Do NOT invent, modify, or infer any classifications.
+*   **Best Fit:** Choose the most appropriate option at each level (category, subcategory, type) even if the match isn't perfect, as long as it's from the provided list in 'Classes.txt'.
+
+**Classification Steps (using 'Classes.txt'):**
+1.  **Category:** Identify the single MOST appropriate 'category'.
+2.  **Subcategory:** Within the chosen 'category', identify the single MOST appropriate 'subcategory'.
+3.  **Type:** Within the chosen 'subcategory', identify the single MOST appropriate 'type'.
+    *   **Specific Fallback for 'type':** If, and ONLY if, *none* of the 'type' options listed under the chosen subcategory in 'Classes.txt' are a suitable match for the input text, you MUST use the exact Arabic string "لا يوجد" for the "type" value.
+
+**Output Requirements:**
+*   **Format:** Your response MUST be a single, valid JSON object.
+*   **Language:** All string values within the JSON object MUST be in ARABIC.
+*   **Structure:** The JSON object MUST contain the following keys, exactly as named:
+    *   `"category"`: The selected Arabic name of the category (from 'Classes.txt').
+    *   `"subcategory"`: The selected Arabic name of the subcategory (from 'Classes.txt').
+    *   `"type"`: The selected Arabic name of the type (from 'Classes.txt'), or "لا يوجد" as per the fallback rule.
+    *   `"explanation"`: A concise but informative explanation in ARABIC, justifying your choices for category, subcategory, and type. This should briefly state *why* the selected classifications fit the input text.
+"""
         
-        model_name = "gemini-2.5-flash-preview-04-17"
+        model_name = "gemini-2.5-flash-preview-04-17" # Using existing model name
 
-        files_to_upload = [
-            upload_to_gemini(client, Path("Data") / "Classes.txt", mime_type="text/plain"),
-        ]
+        classes_file_path = Path("Data") / "Classes.txt"
+        # Mime type is optional for upload_to_gemini, it will try to get from API or use default
+        classes_file_obj = upload_to_gemini(client, classes_file_path) 
 
-        if None in files_to_upload:
-            raise Exception("Failed to upload required files")
+        if classes_file_obj is None:
+            error_msg = "Failed to upload or retrieve 'Classes.txt'. Cannot proceed with Gemini initialization."
+            st.error(error_msg)
+            raise Exception(error_msg)
 
-        if not wait_for_files_active(client, files_to_upload):
-            raise Exception("File processing failed")
+        # classes_file_obj is now guaranteed to be active if returned (or an exception was raised)
 
-        chat_generation_config = types.GenerateContentConfig(
-            temperature=generation_config_dict["temperature"],
-            top_p=generation_config_dict["top_p"],
-            top_k=generation_config_dict["top_k"],
-            max_output_tokens=generation_config_dict["max_output_tokens"],
-            response_mime_type=generation_config_dict["response_mime_type"],
+        gen_content_config = types.GenerateContentConfig(
+            temperature=0.0, 
+            top_p=0.95, 
+            top_k=40, 
+            max_output_tokens=8192, 
+            response_mime_type="application/json", 
             system_instruction=system_instruction_text
         )
         
-        initial_history = []
-        if files_to_upload and files_to_upload[0] is not None:
-            initial_history.append({
-                "role": "user",
-                "parts": [files_to_upload[0]],
-            })
+        print("Gemini initialized successfully for generate_content.")
+        return client, model_name, gen_content_config, classes_file_obj
 
-        chat_session = client.chats.create(
-            model=model_name,
-            history=initial_history if initial_history else None,
-            config=chat_generation_config
-        )
-        return chat_session
     except Exception as e:
         st.error(f"Failed to initialize Gemini: {e}")
-        return None
+        traceback.print_exc() # Print stack trace for server logs
+        return None, None, None, None
 
 #------------------------------------------------------------------------------
 # MAIN APPLICATION
@@ -273,6 +416,17 @@ def main():
     if "last_update" not in st.session_state:
         st.session_state.last_update = time.time()
 
+    # Session state for Gemini client and config
+    if "gemini_client" not in st.session_state:
+        st.session_state.gemini_client = None
+    if "model_name" not in st.session_state:
+        st.session_state.model_name = None
+    if "generation_config" not in st.session_state: # Renamed from chat_generation_config
+        st.session_state.generation_config = None
+    if "classes_file_obj" not in st.session_state: # For storing the Classes.txt file object
+        st.session_state.classes_file_obj = None
+
+
     # Remove duplicate history initialization
     if "case_submitted" not in st.session_state:
         st.session_state.case_submitted = False
@@ -291,8 +445,6 @@ def main():
         'gov': get_base64_logo("DigitaGov.png.svg"),
         'main': get_base64_logo("LOGO.svg")
     }
-
-    notification_icon = "✅"
 
     # Render header
     st.markdown(f'''
@@ -319,7 +471,7 @@ def main():
         st.markdown('<div class="content-section">', unsafe_allow_html=True)
         st.markdown("## 📝 نص الدعوى ")
 
-        if "chat_session" in st.session_state:
+        if st.session_state.gemini_client: # Check if client is initialized
             user_input = st.text_area(
                 label=" ",
                 height=300,
@@ -333,28 +485,33 @@ def main():
                     <h3>يتم تهيئة النظام...</h3>
                 </div>
             """, unsafe_allow_html=True)
-            st.session_state.loading = True
+            st.session_state.loading = True # Keep this to show loading message
 
-            # Try to initialize with current key
-            initialization = initialize_gemini(st.session_state.key_id)
+            # Try to initialize Gemini
+            client, model_name, gen_config, classes_file = initialize_gemini(st.session_state.key_id)
 
-            # If initialization fails, try other keys
-            if initialization is None:
+            if client is None: # If first attempt fails, try other keys
                 for i in range(1, NUM_KEYS + 1):
                     if i != st.session_state.key_id:
-                        st.session_state.key_id = i
-                        initialization = initialize_gemini(i)
-                        if initialization is not None:
+                        st.session_state.key_id = i # Update key_id for next attempt
+                        client, model_name, gen_config, classes_file = initialize_gemini(i)
+                        if client is not None:
                             break
+            
+            if client is None:
+                # This error is already shown by initialize_gemini, but good to have a fallback
+                st.error("Critical: Failed to initialize the Gemini system after trying all keys. Please contact support.")
+                st.session_state.loading = False # Stop loading indicator
+                return # Stop further execution in this run
 
-                if initialization is None:
-                    st.error("Failed to initialize the system. Please contact support.")
-                    st.session_state.loading = False
-                    return
-
-            st.session_state.chat_session = initialization
-            st.session_state.loading = False
-            st.rerun()
+            # Store initialized components in session state
+            st.session_state.gemini_client = client
+            st.session_state.model_name = model_name
+            st.session_state.generation_config = gen_config
+            st.session_state.classes_file_obj = classes_file
+            
+            st.session_state.loading = False # Clear loading state
+            st.rerun() # Rerun to reflect the initialized state
 
         col1, col2 = st.columns(2)
         with col1:
@@ -392,7 +549,7 @@ def main():
         else:
             st.markdown("<h2>⚡ نتائج التصنيف</h2>", unsafe_allow_html=True)
 
-        if st.session_state.loading:
+        if st.session_state.loading: # This is True when "تصنيف الدعوى" button is clicked
             st.markdown("""
                 <div class="custom-spinner-container">
                     <div class="custom-spinner"></div>
@@ -400,25 +557,81 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-            with st.spinner(''):
-                print("Sending message to Gemini...")
+            with st.spinner(''): # Streamlit's built-in spinner
+                print("Sending request to Gemini using generate_content...")
                 start_time = time.time()
-                response = st.session_state.chat_session.send_message(message=user_input)
+                
+                # Prepare contents for generate_content
+                # The system_instruction is in st.session_state.generation_config
+                # Classes.txt file object is st.session_state.classes_file_obj
+                request_contents = [
+                    st.session_state.classes_file_obj, # The File object for Classes.txt
+                    user_input  # The user's text input for classification
+                ]
+
+                # --- Add Enhanced Debugging ---
+                print("--- Debug: Preparing for Gemini API call ---")
+                print(f"Model Name: {st.session_state.model_name}")
+                print(f"Request Contents (type of 1st item): {type(request_contents[0])}")
+                print(f"Request Contents (1st item details): {request_contents[0]}")
+                print(f"User Input (length): {len(user_input)}")
+                print(f"Generation Config: {st.session_state.generation_config}")
+                print("--- End Debug ---")
+                # --- End Enhanced Debugging ---
+
+                response_text = None
+                data = False # Default to False
+
+                try:
+                    # Ensure all necessary components are available
+                    if not all([st.session_state.gemini_client, 
+                                st.session_state.model_name, 
+                                request_contents[0], # classes_file_obj
+                                st.session_state.generation_config]):
+                        st.error("Gemini client or necessary configuration is missing. Cannot proceed.")
+                        raise Exception("Gemini client/config missing.")
+
+                    api_response = st.session_state.gemini_client.models.generate_content(
+                        model=st.session_state.model_name,
+                        contents=request_contents,
+                        config=st.session_state.generation_config 
+                    )
+                    response_text = api_response.text
+                except Exception as e:
+                    st.error(f"Error calling Gemini API: {e}")
+                    print(f"Error calling Gemini API: {e}")
+                    traceback.print_exc()
+                    # data remains False
+
                 end_time = time.time()
                 duration = end_time - start_time
-                print(f"Gemini API response took {duration:.2f} seconds")
-                try:
-                    data = json.loads(response.text)
-                    if isinstance(data, list) and len(data) > 0:
-                        data = data[0]
-                    if not isinstance(data, dict) or not all(key in data for key in ['category', 'subcategory', 'type']):
-                        print(f"Invalid response structure: {data}")
+                print(f"Gemini API call took {duration:.2f} seconds")
+
+                if response_text:
+                    try:
+                        parsed_json = json.loads(response_text)
+                        if isinstance(parsed_json, list) and len(parsed_json) > 0:
+                            # Assuming the API might return a list with one item
+                            data = parsed_json[0] 
+                        elif isinstance(parsed_json, dict):
+                            data = parsed_json
+                        else: # Unexpected structure
+                            print(f"Unexpected JSON structure from API: {parsed_json}")
+                            data = False
+
+
+                        if not isinstance(data, dict) or not all(key in data for key in ['category', 'subcategory', 'type']):
+                            print(f"Invalid response structure after parsing: {data}")
+                            data = False # Reset to False if structure is not as expected
+                    except json.JSONDecodeError as e:
+                        print(f"Error decoding JSON from Gemini response: {e}")
+                        print(f"Received text: {response_text}")
                         data = False
-                except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON: {e}")
+                else: # If response_text is None due to API error
                     data = False
 
-            if data == False:
+
+            if not data: # Simplified check
                 m_calss_example = "-"
                 s_calss_example = "-"
                 case_type_example = "-"
@@ -432,7 +645,7 @@ def main():
             # Save new entry to database
             new_entry = {
                 "id": str(uuid.uuid4()),
-                "input": user_input,
+                "input": user_input, # Ensure user_input is captured correctly
                 "main_classification": m_calss_example,
                 "sub_classification": s_calss_example,
                 "case_type": case_type_example,
@@ -572,8 +785,6 @@ def main():
     #     tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
 
     #     with tab1:
-    #         notification_icon = "✅"
-
     #         for i in range(len(st.session_state.history)):
     #             if f"item_visible_{i}" not in st.session_state:
     #                 st.session_state[f"item_visible_{i}"] = True
@@ -581,7 +792,7 @@ def main():
     #         def handle_delete(entry_id):
     #             delete_from_db(entry_id)
     #             st.session_state.history = load_history_from_db()
-    #             st.toast("تم حذف العنصر بنجاح", icon=notification_icon)
+    #             st.toast("تم حذف العنصر بنجاح", icon="✅") # Used icon directly
     #             st.session_state.deletion_triggered = True
 
     #         visible_count = 0
@@ -670,7 +881,7 @@ def main():
     #             if not st.session_state.get('clear_triggered'):
     #                 clear_history_db()
     #                 st.session_state.history = []
-    #                 st.toast("تم مسح السجل بالكامل", icon=notification_icon)
+    #                 st.toast("تم مسح السجل بالكامل", icon="✅") # Used icon directly
     #                 st.session_state.clear_triggered = True
     #                 st.session_state.deletion_triggered = True
 
