@@ -267,8 +267,7 @@ def upload_to_gemini(client, path: Path, mime_type: str | None = None):
 
         print(f"No suitable existing file found for {file_path}. Uploading anew...")
         uploaded_file_obj = client.files.upload(
-            file=file_path, # Pass Path object directly
-            display_name=file_path.name # Good practice to set display name
+            file=file_path # Pass Path object directly
         )
         print(f"Uploaded '{file_path.name}' as {uploaded_file_obj.name}, waiting for it to become active...")
         
