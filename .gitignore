@@ -1,3 +1,4 @@
 .streamlit/secrets.toml 
 ~$w_orgnised.docx
-history.dbhistory.db
+history.db
+file_cache.json
