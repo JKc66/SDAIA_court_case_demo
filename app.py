@@ -11,7 +11,9 @@ import datetime
 import pandas as pd
 import uuid
 import sqlite3
-import traceback # Added for more detailed error logging
+import traceback 
+import io
+import openpyxl
 
 NUM_KEYS = 1
 
@@ -29,10 +31,10 @@ def load_file_cache():
             if not content:
                 return {}
             return json.loads(content)
-    except json.JSONDecodeError: # Handle corrupted cache file
+    except json.JSONDecodeError: 
         print("Error decoding file_cache.json, returning empty cache.")
         return {}
-    except FileNotFoundError: # Should be caught by .exists() but as a safeguard
+    except FileNotFoundError: 
         return {}
 
 def save_file_cache(cache):
@@ -351,10 +353,9 @@ This classification scheme (categories, subcategories, and types) is **exclusive
     *   `"explanation"`: A concise but informative explanation in ARABIC, justifying your choices for category, subcategory, and type. This should briefly state *why* the selected classifications fit the input text.
 """
         
-        model_name = "gemini-2.5-flash-preview-04-17" # Using existing model name
+        model_name = "gemini-2.5-flash" 
 
         classes_file_path = Path("Data") / "Classes.txt"
-        # Mime type is optional for upload_to_gemini, it will try to get from API or use default
         classes_file_obj = upload_to_gemini(client, classes_file_path) 
 
         if classes_file_obj is None:
@@ -713,206 +714,206 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-    # # History Section
-    # st.markdown("""
-    #     <div class="history-title">
-    #         <h2>📜 سجل التصنيفات</h2>
-    #     </div>
-    # """, unsafe_allow_html=True)
+    # History Section
+    st.markdown("""
+        <div class="history-title">
+            <h2>📜 سجل التصنيفات</h2>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # # Download functionality
-    # if st.session_state.history:
-    #     # Convert history to DataFrame for display
-    #     df_display = pd.DataFrame(st.session_state.history)
-    #     df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input_text', 'explanation']]
-    #     df_display.columns = ['نوع الدعوى', 'التصنيف الفرعي', 'التصنيف الرئيسي', 'نص الدعوى', 'شرح']
+    # Download functionality
+    if st.session_state.history:
+        # Convert history to DataFrame for display
+        df_display = pd.DataFrame(st.session_state.history)
+        df_display = df_display[['case_type', 'sub_classification', 'main_classification', 'input_text', 'explanation']]
+        df_display.columns = ['نوع الدعوى', 'التصنيف الفرعي', 'التصنيف الرئيسي', 'نص الدعوى', 'شرح']
 
-    #     # Create a different DataFrame for download with original order
-    #     df_download = pd.DataFrame(st.session_state.history)
-    #     df_download = df_download[['input_text', 'main_classification', 'sub_classification', 'case_type', 'explanation']]
-    #     df_download.columns = ['نص الدعوى', 'التصنيف الرئيسي', 'التصنيف الفرعي', 'نوع الدعوى', 'شرح']
+        # Create a different DataFrame for download with original order
+        df_download = pd.DataFrame(st.session_state.history)
+        df_download = df_download[['input_text', 'main_classification', 'sub_classification', 'case_type', 'explanation']]
+        df_download.columns = ['نص الدعوى', 'التصنيف الرئيسي', 'التصنيف الفرعي', 'نوع الدعوى', 'شرح']
 
-    #     # Create Excel file in memory
-    #     output = io.BytesIO()
-    #     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-    #         df_download.to_excel(writer, index=False, sheet_name='Sheet1')
+        # Create Excel file in memory
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df_download.to_excel(writer, index=False, sheet_name='Sheet1')
 
-    #         worksheet = writer.sheets['Sheet1']
-    #         worksheet.sheet_view.rightToLeft = True
+            worksheet = writer.sheets['Sheet1']
+            worksheet.sheet_view.rightToLeft = True
 
-    #         for column in worksheet.columns:
-    #             max_length = 0
-    #             column = [cell for cell in column]
-    #             for cell in column:
-    #                 try:
-    #                     if len(str(cell.value)) > max_length:
-    #                         max_length = len(str(cell.value))
-    #                 except:
-    #                     pass
-    #             adjusted_width = (max_length + 2)
-    #             worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
+            for column in worksheet.columns:
+                max_length = 0
+                column = [cell for cell in column]
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
 
-    #         for row in worksheet.rows:
-    #             for cell in row:
-    #                 cell.font = openpyxl.styles.Font(name='Arial', size=11)
-    #                 cell.alignment = openpyxl.styles.Alignment(horizontal='right', vertical='center', wrap_text=True)
+            for row in worksheet.rows:
+                for cell in row:
+                    cell.font = openpyxl.styles.Font(name='Arial', size=11)
+                    cell.alignment = openpyxl.styles.Alignment(horizontal='right', vertical='center', wrap_text=True)
 
-    #     excel_data = output.getvalue()
+        excel_data = output.getvalue()
 
-    #     col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
 
-    #     with col1:
-    #         st.download_button(
-    #             label="⬇️ تحميل سجل التصنيفات (Excel)",
-    #             data=excel_data,
-    #             file_name="history.xlsx",
-    #             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    #             use_container_width=True
-    #         )
+        with col1:
+            st.download_button(
+                label="⬇️ تحميل سجل التصنيفات (Excel)",
+                data=excel_data,
+                file_name="history.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
 
-    #     with col2:
-    #         # Convert history to JSON for download
-    #         json_str = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
-    #         st.download_button(
-    #             label="⬇️ تحميل سجل التصنيفات (JSON)",
-    #             data=json_str,
-    #             file_name="export.json",
-    #             mime="application/json",
-    #             use_container_width=True
-    #         )
+        with col2:
+            # Convert history to JSON for download
+            json_str = json.dumps(st.session_state.history, ensure_ascii=False, indent=2)
+            st.download_button(
+                label="⬇️ تحميل سجل التصنيفات (JSON)",
+                data=json_str,
+                file_name="export.json",
+                mime="application/json",
+                use_container_width=True
+            )
 
-    #     tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
+        tab1, tab2 = st.tabs(["🗂️ عرض تفصيلي", "📊 عرض جدولي"])
 
-    #     with tab1:
-    #         for i in range(len(st.session_state.history)):
-    #             if f"item_visible_{i}" not in st.session_state:
-    #                 st.session_state[f"item_visible_{i}"] = True
+        with tab1:
+            for i in range(len(st.session_state.history)):
+                if f"item_visible_{i}" not in st.session_state:
+                    st.session_state[f"item_visible_{i}"] = True
 
-    #         def handle_delete(entry_id):
-    #             delete_from_db(entry_id)
-    #             st.session_state.history = load_history_from_db()
-    #             st.toast("تم حذف العنصر بنجاح", icon="✅") # Used icon directly
-    #             st.session_state.deletion_triggered = True
+            def handle_delete(entry_id):
+                delete_from_db(entry_id)
+                st.session_state.history = load_history_from_db()
+                st.toast("تم حذف العنصر بنجاح", icon="✅") # Used icon directly
+                st.session_state.deletion_triggered = True
 
-    #         visible_count = 0
-    #         for i, entry in enumerate(st.session_state.history[:5]):  # Show only last 5 entries
-    #             if visible_count > 0:
-    #                 st.markdown("""
-    #                     <div class="custom-divider">
-    #                         <span>•••</span>
-    #                     </div>
-    #                 """, unsafe_allow_html=True)
-    #             visible_count += 1
+            visible_count = 0
+            for i, entry in enumerate(st.session_state.history[:5]):  # Show only last 5 entries
+                if visible_count > 0:
+                    st.markdown("""
+                        <div class="custom-divider">
+                            <span>•••</span>
+                        </div>
+                    """, unsafe_allow_html=True)
+                visible_count += 1
 
-    #             with st.container():
-    #                 st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
-    #                 col_content, col_delete = st.columns([0.95, 0.05])
+                with st.container():
+                    st.markdown('<div class="flex-95-5">', unsafe_allow_html=True)
+                    col_content, col_delete = st.columns([0.95, 0.05])
 
-    #                 with col_content:
-    #                     st.markdown(f"""
-    #                     <div class="case-text">
-    #                         <strong>البحث:</strong> {entry["input_text"]}
-    #                     </div>
-    #                     """,
-    #                     unsafe_allow_html=True)
+                    with col_content:
+                        st.markdown(f"""
+                        <div class="case-text">
+                            <strong>البحث:</strong> {entry["input_text"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True)
 
-    #                     if entry["explanation"]:
-    #                         st.markdown(f"""
-    #                             <div class="info-link-container">
-    #                                 <a href="#" class="info-link">
-    #                                     شرح اضافي
-    #                                     <span class="info-icon">i</span>
-    #                                 </a>
-    #                                 <div class="info-bubble">
-    #                                     {entry["explanation"]}
-    #                                 </div>
-    #                             </div>
-    #                         """, unsafe_allow_html=True)
+                        if entry["explanation"]:
+                            st.markdown(f"""
+                                <div class="info-link-container">
+                                    <a href="#" class="info-link">
+                                        شرح اضافي
+                                        <span class="info-icon">i</span>
+                                    </a>
+                                    <div class="info-bubble">
+                                        {entry["explanation"]}
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
 
-    #                 with col_delete:
-    #                     st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
-    #                     if st.button("🗑️", key=f"delete_{entry['id']}", on_click=handle_delete, args=(entry['id'],)):
-    #                         pass
-    #                     st.markdown('</div>', unsafe_allow_html=True)
-    #                 st.markdown('</div>', unsafe_allow_html=True)
+                    with col_delete:
+                        st.markdown('<div class="delete-button-wrapper">', unsafe_allow_html=True)
+                        if st.button("🗑️", key=f"delete_{entry['id']}", on_click=handle_delete, args=(entry['id'],)):
+                            pass
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-    #                 st.markdown(f"""
-    #                     <div class="classification-item main-classification">
-    #                         <div class="classification-label">
-    #                             <span class="classification-icon">📊</span>
-    #                             التصنيف الرئيسي
-    #                         </div>
-    #                         <div class="classification-value">{entry["main_classification"]}</div>
-    #                     </div>
-    #                 """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div class="classification-item main-classification">
+                            <div class="classification-label">
+                                <span class="classification-icon">📊</span>
+                                التصنيف الرئيسي
+                            </div>
+                            <div class="classification-value">{entry["main_classification"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-    #                 st.markdown(f"""
-    #                     <div class="classification-item sub-classification">
-    #                         <div class="classification-label">
-    #                             <span class="classification-icon">🔍</span>
-    #                             التصنيف الفرعي
-    #                         </div>
-    #                         <div class="classification-value">{entry["sub_classification"]}</div>
-    #                     </div>
-    #                 """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div class="classification-item sub-classification">
+                            <div class="classification-label">
+                                <span class="classification-icon">🔍</span>
+                                التصنيف الفرعي
+                            </div>
+                            <div class="classification-value">{entry["sub_classification"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-    #                 st.markdown(f"""
-    #                     <div class="classification-item case-type">
-    #                         <div class="classification-label">
-    #                             <span class="classification-icon">⚖️</span>
-    #                             نوع الدعوى
-    #                         </div>
-    #                         <div class="classification-value">{entry["case_type"]}</div>
-    #                     </div>
-    #                 """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div class="classification-item case-type">
+                            <div class="classification-label">
+                                <span class="classification-icon">⚖️</span>
+                                نوع الدعوى
+                            </div>
+                            <div class="classification-value">{entry["case_type"]}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-    #                 st.markdown(f"""
-    #                     <div class="classification-item response-time">
-    #                         <div class="classification-label">
-    #                             <span class="classification-icon">⏱️</span>
-    #                             زمن الاستجابة
-    #                         </div>
-    #                         <div class="classification-value">{entry.get("duration", "-")} ثانية</div>
-    #                     </div>
-    #                 """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                        <div class="classification-item response-time">
+                            <div class="classification-label">
+                                <span class="classification-icon">⏱️</span>
+                                زمن الاستجابة
+                            </div>
+                            <div class="classification-value">{entry.get("duration", "-")} ثانية</div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-    #         def handle_clear_all():
-    #             if not st.session_state.get('clear_triggered'):
-    #                 clear_history_db()
-    #                 st.session_state.history = []
-    #                 st.toast("تم مسح السجل بالكامل", icon="✅") # Used icon directly
-    #                 st.session_state.clear_triggered = True
-    #                 st.session_state.deletion_triggered = True
+            def handle_clear_all():
+                if not st.session_state.get('clear_triggered'):
+                    clear_history_db()
+                    st.session_state.history = []
+                    st.toast("تم مسح السجل بالكامل", icon="✅") # Used icon directly
+                    st.session_state.clear_triggered = True
+                    st.session_state.deletion_triggered = True
 
-    #         st.markdown('<div class="clear-all-button-container">', unsafe_allow_html=True)
-    #         if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
-    #             pass
-    #         st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('<div class="clear-all-button-container">', unsafe_allow_html=True)
+            if st.button("مسح السجل بالكامل", type="secondary", on_click=handle_clear_all):
+                pass
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    #     with tab2:
-    #         if st.session_state.deletion_triggered:
-    #             st.session_state.deletion_triggered = False
-    #             st.rerun()
+        with tab2:
+            if st.session_state.deletion_triggered:
+                st.session_state.deletion_triggered = False
+                st.rerun()
                 
-    #         st.markdown("""
-    #             <style>
-    #                 .stDataFrame {
-    #                     font-family: 'Noto Kufi Arabic', sans-serif;
-    #                 }
-    #                 .stDataFrame td, .stDataFrame th {
-    #                     text-align: right !important;
-    #                     direction: rtl !important;
-    #                 }
-    #             </style>
-    #         """, unsafe_allow_html=True)
-    #         st.dataframe(
-    #             df_display,
-    #             use_container_width=True,
-    #             hide_index=True
-    #         )
+            st.markdown("""
+                <style>
+                    .stDataFrame {
+                        font-family: 'Noto Kufi Arabic', sans-serif;
+                    }
+                    .stDataFrame td, .stDataFrame th {
+                        text-align: right !important;
+                        direction: rtl !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            st.dataframe(
+                df_display,
+                use_container_width=True,
+                hide_index=True
+            )
 
-    # else:
-    #     st.markdown('<div class="info-message">لا يوجد سجل تصنيفات سابقة</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="info-message">لا يوجد سجل تصنيفات سابقة</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
